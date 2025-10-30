@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "gate-weimar"
+version = "0.1.0"
+description = ""
+authors = ["Philipp Riegelmann <philipp.riegelmann@marxkrontal.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pyyaml = "^6.0.3"
+quixstreams = "^3.23.1"
+click = "^8.3.0"
+jupyter = "^1.1.1"
+ruff = "^0.14.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
