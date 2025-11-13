@@ -1,0 +1,3 @@
+[submodule "conceptual designs/vue-frontend-webapp"]
+	path = conceptual designs/vue-frontend-webapp
+	url = https://github.com/ananthu-sk/vue-gate-frontend.git
