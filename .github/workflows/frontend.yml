@@ -10,10 +10,6 @@ jobs:
   lint:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./frontend/prototype
     strategy:
       matrix:
         node-version: [22.x]
@@ -25,16 +21,15 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+          cache-dependency-path: ./frontend/prototype/package-lock.json
       - run: npm ci
+        working-directory: ./frontend/prototype
       - run: npm run lint
+        working-directory: ./frontend/prototype
 
   build:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./frontend/prototype
     strategy:
       matrix:
         node-version: [22.x]
@@ -46,10 +41,13 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
+          cache-dependency-path: ./frontend/prototype/package-lock.json
       - run: npm ci
+        working-directory: ./frontend/prototype
       - run: npm run build
+        working-directory: ./frontend/prototype
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./frontend/prototype/dist
