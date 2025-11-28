@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* Vuetify Container Styling */
+.v-application__wrap {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.v-application {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
