@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@tailwindcss/postcss": "^4.1.17",
     "monaco-editor": "^0.54.0",
     "monaco-editor-vue3": "^1.0.4",
     "pinia": "^3.0.3",
