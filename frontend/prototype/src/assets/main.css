@@ -1,0 +1,118 @@
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.47.0/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/core@1.47.0/dist/theme-default.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/controls@latest/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/minimap@latest/dist/style.css';
+@import 'https://cdn.jsdelivr.net/npm/@vue-flow/node-resizer@latest/dist/style.css';
+
+body {
+  /* background-color: lightblue; */
+}
+
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}
+
+#app {
+  /* text-transform: uppercase; */
+  font-family: 'JetBrains Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+}
+
+.vue-flow__minimap {
+  transform: scale(75%);
+  transform-origin: bottom right;
+}
+
+.basic-flow.dark {
+  background: #2d3748;
+  color: #fffffb;
+}
+
+.basic-flow.dark .vue-flow__node {
+  background: #4a5568;
+  color: #fffffb;
+}
+
+.basic-flow.dark .vue-flow__node.selected {
+  background: #333;
+  box-shadow: 0 0 0 2px #2563eb;
+}
+
+.basic-flow .vue-flow__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.basic-flow.dark .vue-flow__controls {
+  border: 1px solid #fffffb;
+}
+
+.basic-flow .vue-flow__controls .vue-flow__controls-button {
+  border: none;
+  border-right: 1px solid #eee;
+}
+
+.basic-flow .vue-flow__controls .vue-flow__controls-button svg {
+  height: 100%;
+  width: 100%;
+}
+
+.basic-flow.dark .vue-flow__controls .vue-flow__controls-button {
+  background: #333;
+  fill: #fffffb;
+  border: none;
+}
+
+.basic-flow.dark .vue-flow__controls .vue-flow__controls-button:hover {
+  background: #4d4d4d;
+}
+
+.basic-flow.dark .vue-flow__edge-textbg {
+  fill: #292524;
+}
+
+.basic-flow.dark .vue-flow__edge-text {
+  fill: #fffffb;
+}
+
+.code-editor-container {
+  height: 400px;
+  border: 1px solid #3a3a4f;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  /* background: #4a5568; */
+  width: 130px;
+  border: 1px solid black;
+  padding: 3px;
+}
+
+.input-nodes {
+  text-align: center;
+}
+.uk-modal-dialog {
+  background: #4b4b5e;
+}
+
+.uk-modal-title {
+  color: white;
+}
+
+.panel > button:not(:last-child) {
+  margin-right: 10px;
+}

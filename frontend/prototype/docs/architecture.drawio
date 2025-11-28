@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36" version="29.0.3">
+  <diagram name="Page-1" id="pVyNm8_HGrLoqtTYrt0P">
+    <mxGraphModel dx="470" dy="1656" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-19" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="Asjbpe5AjRGRI_g3JCxH-8" target="Asjbpe5AjRGRI_g3JCxH-11" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="950" y="420" as="sourcePoint" />
+            <mxPoint x="810" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-1" value="Node docker container (running Vue.js production build)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="70" y="80" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-2" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="Asjbpe5AjRGRI_g3JCxH-1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="440" y="240" as="sourcePoint" />
+            <mxPoint x="560" y="140" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="420" y="140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-3" value="Flask docker server (privileged)&lt;div&gt;saving contents as&amp;nbsp;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255)); background-color: transparent;&quot;&gt;Consumer.py&lt;/span&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="560" y="80" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-6" value="" style="endArrow=classic;html=1;rounded=0;exitX=-0.006;exitY=0.928;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.997;entryY=0.941;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="Asjbpe5AjRGRI_g3JCxH-3" target="Asjbpe5AjRGRI_g3JCxH-1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="240" as="sourcePoint" />
+            <mxPoint x="390" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-7" value="Ack Success/Failure" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="370" y="160" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-8" value="Python docker container (running Consumer.py)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="600" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-9" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="Asjbpe5AjRGRI_g3JCxH-3" target="Asjbpe5AjRGRI_g3JCxH-8" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="490" y="240" as="sourcePoint" />
+            <mxPoint x="540" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-11" value="Redpanda" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="860" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-12" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="430" as="sourcePoint" />
+            <mxPoint x="340" y="30" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-13" value="Frontend" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="130" y="40" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-17" value="Backend" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="630" y="40" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-18" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="Asjbpe5AjRGRI_g3JCxH-11" target="Asjbpe5AjRGRI_g3JCxH-8" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="620" y="270" as="sourcePoint" />
+            <mxPoint x="570" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-21" value="subscribe /input_topic" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="770" y="340" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Asjbpe5AjRGRI_g3JCxH-22" value="publish /output_topic" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="770" y="410" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hpLXj0U7qFWjvIp_sB_g-2" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Proposed Architecture&lt;/h1&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="260" y="-40" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hpLXj0U7qFWjvIp_sB_g-5" value="starts other docker container" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="660" y="260" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="zxAQgQVtDW4lMdyNkbbG-1" value="&lt;div&gt;POST&lt;/div&gt;&lt;div&gt;Consumer.py&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="370" y="110" width="80" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
