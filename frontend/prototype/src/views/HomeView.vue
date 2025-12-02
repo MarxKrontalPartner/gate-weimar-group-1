@@ -5,7 +5,7 @@ import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import { initialEdges, initialNodes } from '../assets/initial-flow.ts'
-import Icon from '../components/Icon.vue'
+import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
@@ -239,20 +239,20 @@ const uploadJson = (event: Event) => {
 
     <Controls position="top-left">
       <ControlButton title="Reset Transform" @click="resetTransform">
-        <Icon name="reset" />
+        <CustomIcon name="reset" />
       </ControlButton>
 
       <ControlButton title="Shuffle Node Positions" @click="updatePos">
-        <Icon name="update" />
+        <CustomIcon name="update" />
       </ControlButton>
 
       <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
-        <Icon v-if="dark" name="sun" />
-        <Icon v-else name="moon" />
+        <CustomIcon v-if="dark" name="sun" />
+        <CustomIcon v-else name="moon" />
       </ControlButton>
 
       <ControlButton title="Log `toObject`" @click="logToObject">
-        <Icon name="log" />
+        <CustomIcon name="log" />
       </ControlButton>
     </Controls>
   </VueFlow>
