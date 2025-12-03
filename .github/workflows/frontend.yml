@@ -1,4 +1,4 @@
-name: Frontend CI & CD
+name: Frontend lint
 
 on:
   push:
@@ -23,30 +23,12 @@ jobs:
           cache-dependency-path: ./frontend/prototype/package-lock.json
       - run: npm ci
         working-directory: ./frontend/prototype
+        # eslint check
       - run: npm run lint
         working-directory: ./frontend/prototype
-
-  build:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22.x]
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-          cache-dependency-path: ./frontend/prototype/package-lock.json
-      - run: npm ci
+        # typescript check
+      - run: npm run type-check
         working-directory: ./frontend/prototype
-      - run: npm run build
+        # code format check with prettier
+      - run: npm run format-check
         working-directory: ./frontend/prototype
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./frontend/prototype/dist
