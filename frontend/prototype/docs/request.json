@@ -1,0 +1,27 @@
+[
+    {
+    "address": "localhost:19092",
+    "input_topic": "input_topic",
+    "output_topic": "output_topic",
+    "transformations": [
+    ]
+  },
+  {
+    "address": "localhost:19092",
+    "input_topic": "input_topic",
+    "output_topic": "output_topic",
+    "transformations": [
+      "def sum(row: dict) -> dict:\\n    logger.info(f\\"before :: row :: {row}\\")\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] += 5\\n    logger.info(f\\"after :: row :: {row}\\")\\n    return row\\n  "
+    ]
+  },
+  {
+    "address": "localhost:19092",
+    "input_topic": "input_topic2",
+    "output_topic": "output_topic2",
+    "transformations": [
+      "def sum2(row: dict) -> dict:\\n    logger.info(f\\"before :: row :: {row}\\")\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] += 3\\n    logger.info(f\\"after :: row :: {row}\\")\\n    return row\\n  ",
+
+      "def mul2(row: dict) -> dict:\\n    logger.info(f\\"before :: row :: {row}\\")\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] *= 3\\n    logger.info(f\\"after :: row :: {row}\\")\\n    return row\\n  "
+    ]
+  }
+]
