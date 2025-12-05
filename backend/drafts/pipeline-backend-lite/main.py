@@ -1,5 +1,5 @@
-import sys, os, json, traceback, uuid, subprocess, time, socket
-from fastapi import FastAPI
+import sys, os, json, traceback, uuid, subprocess, threading, time, socket
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from quixstreams import Application
 from logger import get_logger
@@ -75,8 +75,9 @@ def get_callable_function_for_transformation(transformation_script):
         print(f"Script Error: {e}")
         return lambda x: x
 
+
 @app.post("/start")
-async def process_data(pipeline:PipelineInput):
+def process_data(pipeline:PipelineInput):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
     yaml_path = os.path.join(project_root, "broker", "docker-compose.yaml")
@@ -97,5 +98,22 @@ async def process_data(pipeline:PipelineInput):
         current_dataframe = current_dataframe.apply(transform_func).filter(lambda x: x is not None)
 
     current_dataframe.to_topic(output_topic)
-    quixApp.run()
+    def run_quix_wrapper():
+        quixApp.run()
+
+    app_thread = threading.Thread(target=run_quix_wrapper, daemon=True)
+    app_thread.start()
+
+    print("Pipeline started. Running for 59 seconds...")
+
+    # 3. Block the main thread for 59 seconds
+    time.sleep(59)
+
+    # 4. Stop the application cleanly
+    print("Time limit reached. Stopping pipeline...")
+    quixApp.stop()
+    
+    # 5. Wait for the thread to finish cleaning up
+    app_thread.join()
+
     return "done"
