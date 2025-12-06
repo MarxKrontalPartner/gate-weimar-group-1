@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 from quixstreams import Application
 from quixstreams.models.messages import KafkaMessage
 
-from gate_weimar.logger import get_logger
+
+from logger import get_logger
 
 
 class Producer:

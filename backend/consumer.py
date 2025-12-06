@@ -1,7 +1,7 @@
 from quixstreams import Application
 import uuid
 
-from gate_weimar.logger import get_logger
+from logger import get_logger
 
 
 class Consumer:
@@ -76,7 +76,7 @@ def transformation(row: dict) -> dict:
 if __name__ == "__main__":
     consumer = Consumer(
         broker_address="localhost:19092",
-        input_topic_name="input_topic",
-        output_topic_name="output_topic",
+        input_topic_name="input_tpic",
+        output_topic_name="output_toic",
     )
     consumer.run()

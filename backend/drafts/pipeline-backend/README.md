@@ -7,6 +7,7 @@ A FastAPI-based data streaming orchestration engine using Kafka (Redpanda), Quix
 ### 1. Prerequisites
 * Docker & Docker Compose
 * Python 3.12+ & Poetry
+poetry env use python3.12
 
 ### 2. Setup & Run
 ```bash
