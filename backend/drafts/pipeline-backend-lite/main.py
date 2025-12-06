@@ -1,11 +1,10 @@
-import sys, os, json, traceback, uuid, subprocess, time, socket
-import multiprocessing  
+# main.py
+import os
+import json
+import time
+import docker 
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
-from quixstreams import Application
-from logger import get_logger
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 class PipelineInput(BaseModel):
     address: str
@@ -13,149 +12,61 @@ class PipelineInput(BaseModel):
     output_topic: str
     transformations: list[str]
 
-app = FastAPI(
-    title="Pipeline Backend Lite",
-    description="FastAPI service integrated with Quix Streams for data processing.",
-    version="2.0.0"
-)
-
-# --- HELPER FUNCTIONS ---
-
-def start_redpanda_container(broker_address, yaml_file_path):
-  
-    try:
-        if ":" in broker_address:
-            host_ip, port = broker_address.split(":")
-            port = int(port)
-        else:
-            host_ip = broker_address
-            port = 19092 
-
-        # Quick Check if it already open?
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(0.5)
-        if sock.connect_ex((host_ip, port)) == 0:
-            sock.close()
-            return # Already running, save time
-
-        # Start Docker
-        env_vars = os.environ.copy()
-        env_vars["HOST_ADDRESS"] = host_ip 
-
-        subprocess.run(
-            ["docker", "compose", "-f", yaml_file_path, "up", "-d"], 
-            check=True, 
-            env=env_vars,
-        )
-        
-        print("Docker container started. Waiting for Redpanda to be ready...")
-        
-        # Wait for readiness
-        retries = 30
-        while retries > 0:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
-            result = sock.connect_ex((host_ip, port))
-            sock.close()
-            if result == 0:
-                print(f"Redpanda is ready at {broker_address}!")
-                return
-            time.sleep(1)
-            retries -= 1
-
-        raise Exception("Timed out waiting for Redpanda.")
-    
-    except Exception as e:
-        print(f"Failed to start Redpanda: {e}")
-        raise e
-
-def get_callable_function_for_transformation(transformation_script):
-    
-    local_scope = {}
-    try:
-        exec(transformation_script, {}, local_scope)
-        user_func = local_scope.get("transform")
-        if not user_func: return lambda x: x
-
-    except Exception as e:
-        print(f"Script Compile Error: {e}")
-        return lambda x: x
-
-# --- THE WORKER PROCESS ---
-
-def _run_quix_process(pipeline: PipelineInput):
-    """
-    This function runs in a completely separate process.
-    It has its own Main Thread, so Quix signals will work normally.
-    """
-    logger = get_logger(__name__)
-    logger.info(f"Worker Process Started for {pipeline.input_topic}")
-    
-    try:
-       
-        d_consumer_group = f"consumer_group_{uuid.uuid4().hex[:8]}"
-        
-        quixApp = Application(
-            broker_address=pipeline.address,
-            auto_offset_reset="earliest",
-            consumer_group=d_consumer_group
-        )
-
-        input_topic = quixApp.topic(pipeline.input_topic, value_deserializer="json")
-        output_topic = quixApp.topic(pipeline.output_topic, value_serializer="json")
-
-        #  Build DataFrame
-        df = quixApp.dataframe(input_topic)
-        for script in pipeline.transformations:
-            func = get_callable_function_for_transformation(script)
-            df = df.apply(func).filter(lambda x: x is not None)
-        df.to_topic(output_topic)
-
-        #  Run (Blocks forever until process is killed)
-        logger.info("Quix App running...")
-        quixApp.run()
-    
-    except Exception as e:
-        logger.error(f"Worker Process Crashed: {traceback.format_exc()}")
-
-# --- THE MANAGER (Runs in BackgroundTasks) ---
+app = FastAPI(title="Pipeline Backend Docker Manager")
 
 def manage_pipeline_lifecycle(pipeline: PipelineInput):
     """
-    Spawns the worker, waits 59s, then kills it.
+    Spawns a sibling Docker container using the SAME image as this app.
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "../../.."))
-    yaml_path = os.path.join(project_root, "broker", "docker-compose.yaml")
+    # Connect to the Docker Daemon running on the host
+    client = docker.from_env()
 
-    # Ensure infra is up before spawning
-    start_redpanda_container(pipeline.address, yaml_path)
+    # 1. Identify the image to run. 
+    # In a real setup, you pass this via ENV, e.g., "my-pipeline-app:latest"
+    image_name = os.environ.get("WORKER_IMAGE_NAME", "my-pipeline-image:latest")
+    network_name = os.environ.get("DOCKER_NETWORK_NAME", "pipeline-backend-lite_redpanda_network")
 
-    # Spawn the independent process
-    
-    p = multiprocessing.Process(target=_run_quix_process, args=(pipeline,))
-    p.start()
-    
-    print(f"Pipeline started (PID: {p.pid}). Running for 59s...")
-    
-    # Wait
-    time.sleep(59)
-    
-    # Cleanup
-    print(f"Time limit reached. Terminating PID {p.pid}...")
-    p.terminate() 
-    p.join()
-    print("Pipeline terminated successfully.")
+    # 2. Prepare Environment Variables for the worker
+    env_vars = {
+        "BROKER_ADDRESS": "redpanda:9092", # Use internal Docker network name
+        "INPUT_TOPIC": pipeline.input_topic,
+        "OUTPUT_TOPIC": pipeline.output_topic,
+        # Serialize the list of scripts into a JSON string
+        "TRANSFORMATIONS": json.dumps(pipeline.transformations) 
+    }
 
+    container = None
+    try:
+        print(f"Spawning container for {pipeline.input_topic}...")
+        
+        # 3. Run the container
+        container = client.containers.run(
+            image=image_name,
+            command=["python", "worker.py"],
+            detach=True,
+            network=network_name,  # <--- Uses the variable now
+            environment=env_vars,
+            auto_remove=False
+        )
 
+        print(f"Container {container.short_id} started. Running for 59s...")
+        
+        # 4. Wait
+        time.sleep(59)
+
+        # 5. Cleanup
+        print(f"Time limit reached. Stopping container {container.short_id}...")
+        container.stop() 
+
+    except Exception as e:
+        print(f"Lifecycle Manager failed: {e}")
+        if container:
+            try:
+                container.stop()
+            except:
+                pass
 
 @app.post("/start")
 def process_data(pipeline: PipelineInput, background_tasks: BackgroundTasks):
-    # Hand off to the manager
     background_tasks.add_task(manage_pipeline_lifecycle, pipeline)
-    
-    return {
-        "status": "accepted", 
-        "message": "Pipeline processing started.", 
-        "details": f"Listening on {pipeline.input_topic}"
-    }
+    return {"status": "accepted", "message": "Worker spawning initiated."}
