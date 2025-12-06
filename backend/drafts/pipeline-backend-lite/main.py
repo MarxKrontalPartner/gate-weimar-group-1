@@ -21,12 +21,12 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
     # Connect to the Docker Daemon running on the host
     client = docker.from_env()
 
-    # 1. Identify the image to run. 
-    # In a real setup, you pass this via ENV, e.g., "my-pipeline-app:latest"
+    # Identify the image to run. 
+   
     image_name = os.environ.get("WORKER_IMAGE_NAME", "my-pipeline-image:latest")
     network_name = os.environ.get("DOCKER_NETWORK_NAME", "pipeline-backend-lite_redpanda_network")
 
-    # 2. Prepare Environment Variables for the worker
+    # Prepare Environment Variables for the worker
     env_vars = {
         "BROKER_ADDRESS": "redpanda:9092", # Use internal Docker network name
         "INPUT_TOPIC": pipeline.input_topic,
@@ -39,7 +39,7 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
     try:
         print(f"Spawning container for {pipeline.input_topic}...")
         
-        # 3. Run the container
+        # Run the container
         container = client.containers.run(
             image=image_name,
             command=["python", "worker.py"],
@@ -51,10 +51,10 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
 
         print(f"Container {container.short_id} started. Running for 59s...")
         
-        # 4. Wait
-        time.sleep(59)
+        # Wait
+        time.sleep(120)
 
-        # 5. Cleanup
+        # Cleanup
         print(f"Time limit reached. Stopping container {container.short_id}...")
         container.stop() 
 

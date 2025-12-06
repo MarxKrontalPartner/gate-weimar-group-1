@@ -18,7 +18,7 @@ def get_callable_function_for_transformation(transformation_script):
 
 def main():
     try:
-        # 1. Load Config from Env Vars (injected by main.py)
+        # Load Config from Env Vars (injected by main.py)
         broker_address = os.environ.get("BROKER_ADDRESS", "redpanda:9092")
         input_topic_name = os.environ["INPUT_TOPIC"]
         output_topic_name = os.environ["OUTPUT_TOPIC"]
@@ -29,7 +29,7 @@ def main():
 
         print(f"WORKER STARTED: {input_topic_name} -> {output_topic_name}")
 
-        # 2. Setup Quix
+        # Setup Quix
         # Create a unique consumer group to ensure we don't conflict with previous runs
         c_group = f"worker_{uuid.uuid4().hex[:8]}"
         
@@ -42,7 +42,7 @@ def main():
         input_topic = app.topic(input_topic_name, value_deserializer="json")
         output_topic = app.topic(output_topic_name, value_serializer="json")
 
-        # 3. Build DataFrame
+        # Build DataFrame
         sdf = app.dataframe(input_topic)
 
         # This will print every message receiving from Kafka to the logs
@@ -54,7 +54,7 @@ def main():
             
         sdf.to_topic(output_topic)
 
-        # 4. Run
+        # Run
         app.run()
 
     except Exception as e:

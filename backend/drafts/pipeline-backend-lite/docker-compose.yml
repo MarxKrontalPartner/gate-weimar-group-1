@@ -57,7 +57,7 @@ services:
     depends_on:
       - redpanda
 
-  # --- YOUR NEW PYTHON MANAGER SERVICE ---
+  # --- the PYTHON MANAGER SERVICE ---
   pipeline-manager:
     build: .                          ## Builds the Dockerfile in current dir
     image: my-pipeline-image:latest   ## IMPORTANT: Names the image so we can find it later
