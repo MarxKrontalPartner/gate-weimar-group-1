@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import {
+  ConnectionMode,
+  VueFlow,
+  useVueFlow,
+  Panel,
+  type Node,
+  type Edge,
+} from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -16,21 +24,98 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const { onInit, onConnect, addEdges, setViewport, toObject, fromObject, removeEdges, removeNodes } =
-  useVueFlow()
+const {
+  onInit,
+  onConnect,
+  addEdges,
+  setViewport,
+  toObject,
+  fromObject,
+  removeEdges,
+  removeNodes,
+} = useVueFlow()
 
-const nodes = ref(initialNodes)
-
-const edges = ref(initialEdges)
+const router = useRouter()
 
 // our dark mode toggle flag
 const dark = ref(true)
 
+// graph state used by <VueFlow v-model="nodes" :edges="edges">
+const nodes = ref<Node[]>(initialNodes)
+const edges = ref<Edge[]>(initialEdges)
+
 /**
- * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
- * Any event that is available as `@event-name` on the VueFlow component is also available as `onEventName` on the composable and vice versa
+ * Counter for naming new transform nodes as "Transform N".
+ * We will initialise it from existing nodes on mount so it
+ * always continues from the highest index in the current graph.
+ */
+let transformationNodeNumber = 2
+
+/**
+ * Scan existing nodes, find the highest "Transform N",
+ * and update `transformationNodeNumber` so new nodes
+ * continue from that index.
+ */
+function refreshTransformCounter() {
+  let maxIndex = transformationNodeNumber
+
+  for (const n of nodes.value) {
+    if (n.type === 'custom-transform') {
+      // `data` is some object that may contain a `content` string
+      const content = (n.data as { content?: string } | undefined)?.content
+      if (!content) continue
+
+      const match = content.match(/Transform\s+(\d+)/i)
+      if (match) {
+        const num = Number(match[1])
+        if (!Number.isNaN(num) && num > maxIndex) {
+          maxIndex = num
+        }
+      }
+    }
+  }
+
+  transformationNodeNumber = maxIndex
+}
+
+/**
+ * On mount:
+ * - If there is a graph coming back from TestArea, load it.
+ * - In all cases, refresh the transform counter so "Add a node"
+ *   uses the next available index.
+ */
+onMounted(() => {
+  const savedGraph = sessionStorage.getItem('testarea_graph')
+
+  if (savedGraph) {
+    try {
+      const graph = JSON.parse(savedGraph)
+
+      // update VueFlow internal state
+      fromObject(graph)
+
+      // also update our local refs so the template sees the new data
+      nodes.value = graph.nodes as Node[]
+      edges.value = graph.edges as Edge[]
+
+      console.log('Loaded graph from TestArea:', graph)
+    } catch (e) {
+      console.error('Failed to load graph from TestArea:', e)
+    }
+  }
+
+  // make sure transformationNodeNumber reflects the current graph
+  refreshTransformCounter()
+})
+
+/**
+ * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable,
+ * instead of only on the main component.
  *
- * onInit is called when the VueFlow viewport is initialized
+ * Any event that is available as `@event-name` on the VueFlow component is also available
+ * as `onEventName` on the composable and vice versa.
+ *
+ * onInit is called when the VueFlow viewport is initialized.
  */
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -40,17 +125,37 @@ onInit((vueFlowInstance) => {
 /**
  * onConnect is called when a new connection is created.
  *
- * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
+ * You can add additional properties to your new edge (like a type or label)
+ * or block the creation altogether by not calling `addEdges`.
  */
 onConnect((connection) => {
   addEdges(connection)
 })
 
 /**
+ * Navigate to the TestArea view:
+ * 1. serialise the current graph with `toObject`
+ * 2. store it in sessionStorage
+ * 3. push the /test-area route
+ */
+function goToTestArea() {
+  const graph = toObject()
+  console.log('Sending graph to TestArea:', graph)
+
+  sessionStorage.setItem('testarea_graph', JSON.stringify(graph))
+
+  router.push({
+    name: 'test-area',
+  })
+}
+
+/**
  * To update a node or multiple nodes, you can
  * 1. Mutate the node objects *if* you're using `v-model`
  * 2. Use the `updateNode` method (from `useVueFlow`) to update the node(s)
  * 3. Create a new array of nodes and pass it to the `nodes` ref
+ *
+ * This helper just randomises positions for demonstration.
  */
 function updatePos() {
   nodes.value = nodes.value.map((node: Node) => {
@@ -65,14 +170,15 @@ function updatePos() {
 }
 
 /**
- * toObject transforms your current graph data to an easily persist-able object
+ * toObject transforms your current graph data to an easily persist-able object.
+ * Useful for debugging or exporting.
  */
 function logToObject() {
   console.log(toObject())
 }
 
 /**
- * Resets the current viewport transformation (zoom & pan)
+ * Resets the current viewport transformation (zoom & pan).
  */
 function resetTransform() {
   setViewport({ x: 0, y: 0, zoom: 1 })
@@ -90,9 +196,15 @@ function removeNode({ node }: { node: Node }) {
   removeNodes(node.id, true)
 }
 
-let transformationNodeNumber = 2
-
+/**
+ * Add a new transform node. The node is named "Transform N"
+ * where N continues from the highest existing index (including
+ * any nodes loaded back from TestArea).
+ */
 function addNode() {
+  // ensure counter is at least as large as what we currently have
+  refreshTransformCounter()
+
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
@@ -114,6 +226,10 @@ function addNode() {
   })
 }
 
+/**
+ * Placeholder for running the full pipeline from this view.
+ * Currently not wired to the backend.
+ */
 const onRun = () => {
   // const graphObject = toObject()
   // const inputNode = graphObject.nodes.find((n) => n.type === 'custom-input')
@@ -122,6 +238,9 @@ const onRun = () => {
   // getConnectedEdges(inputNode?.id).forEach((e) => {})
 }
 
+/**
+ * Export the current graph as a JSON file.
+ */
 const onExport = () => {
   const blob = new Blob([JSON.stringify(toObject())], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -134,6 +253,9 @@ const onExport = () => {
   URL.revokeObjectURL(url)
 }
 
+/**
+ * Helpers for importing a saved graph from JSON.
+ */
 const getFileElement = () => {
   const element = document.getElementById('fileUpload') as HTMLInputElement | null
   if (element) {
@@ -155,7 +277,6 @@ const uploadJson = (event: Event) => {
   }
 
   const file = files[0]
-
   const reader = new FileReader()
 
   reader.onload = function (e) {
@@ -218,6 +339,8 @@ const uploadJson = (event: Event) => {
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
         </button>
+        <button class="uk-button uk-button-primary uk-button-small" type="button" @click="goToTestArea"> TestArea </button>
+
       </div>
     </Panel>
 
