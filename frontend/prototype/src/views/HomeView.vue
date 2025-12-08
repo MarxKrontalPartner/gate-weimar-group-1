@@ -16,8 +16,17 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const { onInit, onConnect, addEdges, setViewport, toObject, fromObject, removeEdges, removeNodes } =
-  useVueFlow()
+const {
+  onInit,
+  onConnect,
+  addEdges,
+  setViewport,
+  toObject,
+  fromObject,
+  removeEdges,
+  removeNodes,
+  getOutgoers,
+} = useVueFlow()
 
 const nodes = ref(initialNodes)
 
@@ -107,12 +116,46 @@ function addNode() {
   })
 }
 
+const createRequest = () => {
+  const obj = toObject()
+  const transformations: string[] = []
+
+  const inputNode = obj.nodes.find((n) => n.type == 'custom-input')
+  const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
+
+  if (!inputNode || !outputNode) {
+    alert('input or output node missing')
+    return
+  }
+
+  let node = inputNode
+
+  while (true) {
+    const connectedNode = getOutgoers(node)[0]
+
+    if (connectedNode && connectedNode.id !== outputNode?.id) {
+      transformations.push(connectedNode.data.code)
+      node = connectedNode
+    } else {
+      // check if the last node is the output node ie if the graph is connected
+      if (!connectedNode || connectedNode.id !== outputNode?.id) {
+        alert('graph not connected')
+        return
+      }
+      break
+    }
+  }
+
+  const request = {
+    input_topic: inputNode?.data.content,
+    output_topic: outputNode?.data.content,
+    transformations,
+  }
+  console.log(request)
+}
+
 const onRun = () => {
-  // const graphObject = toObject()
-  // const inputNode = graphObject.nodes.find((n) => n.type === 'custom-input')
-  // const outputNode = graphObject.nodes.find((n) => n.type === 'custom-output')
-  // const arrayTransformNodes = []
-  // getConnectedEdges(inputNode?.id).forEach((e) => {})
+  createRequest()
 }
 
 const onExport = () => {
