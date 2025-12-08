@@ -6,7 +6,6 @@ volumes:
   redpanda: null
 
 services:
-  # --- YOUR ORIGINAL REDPANDA SERVICES ---
   redpanda:
     command:
       - redpanda
@@ -71,7 +70,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock 
     environment:
       - WORKER_IMAGE_NAME=my-pipeline-image:latest
-      # COPY THIS EXACTLY. Do not rely on defaults.
+   
       - DOCKER_NETWORK_NAME=pipeline-backend-lite_redpanda_network
       - BROKER_ADDRESS=redpanda:9092
     depends_on:

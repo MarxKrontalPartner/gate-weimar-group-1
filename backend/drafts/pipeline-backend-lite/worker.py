@@ -3,13 +3,25 @@ import os
 import json
 import traceback
 import uuid
+import ast
 from quixstreams import Application
 
 def get_callable_function_for_transformation(transformation_script):
     local_scope = {}
     try:
+        tree = ast.parse(transformation_script)
+        function_name = None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                function_name = node.name
+                break
+        if not function_name:
+            print("Error: No function definition found in script.")
+            return lambda x: x
+        
         exec(transformation_script, {}, local_scope)
-        user_func = local_scope.get("transform")
+        user_func = local_scope.get(function_name)
+        
         if not user_func: return lambda x: x
         return user_func
     except Exception as e:

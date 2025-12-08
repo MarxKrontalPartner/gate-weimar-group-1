@@ -44,12 +44,12 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
             image=image_name,
             command=["python", "worker.py"],
             detach=True,
-            network=network_name,  # <--- Uses the variable now
+            network=network_name,  
             environment=env_vars,
             auto_remove=False
         )
 
-        print(f"Container {container.short_id} started. Running for 59s...")
+        print(f"Container {container.short_id} started. Running for 120s...")
         
         # Wait
         time.sleep(120)
