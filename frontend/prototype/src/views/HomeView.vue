@@ -147,7 +147,6 @@ const createRequest = () => {
   }
 
   const request = {
-    address: 'localhost:19092',
     input_topic: inputNode?.data.content,
     output_topic: outputNode?.data.content,
     transformations,
