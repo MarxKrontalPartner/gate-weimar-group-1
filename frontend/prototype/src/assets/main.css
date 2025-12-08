@@ -100,6 +100,12 @@ body,
   width: 130px;
   border: 1px solid black;
   padding: 3px;
+  align-items: center;
+
+  button {
+    margin-top: 4%;
+    width: 50%;
+  }
 }
 
 .input-nodes {

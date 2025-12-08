@@ -17,17 +17,15 @@ const onInput = (event: InputEvent) => {
 </script>
 
 <template>
-  <div class="container">
-    <div class="dark">
-      <input
-        id="outputnode"
-        :placeholder="data.content"
-        class="nodrag uk-input input-nodes"
-        type="text"
-        aria-label="Input"
-        @input="onInput"
-      />
-    </div>
+  <div class="container dark">
+    <input
+      id="outputnode"
+      :placeholder="data.content"
+      class="nodrag uk-input input-nodes"
+      type="text"
+      aria-label="Input"
+      @input="onInput"
+    />
     <Handle type="target" :position="Position.Left" :connectable="1" />
   </div>
 </template>

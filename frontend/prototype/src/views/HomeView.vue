@@ -65,13 +65,6 @@ function updatePos() {
 }
 
 /**
- * toObject transforms your current graph data to an easily persist-able object
- */
-function logToObject() {
-  console.log(toObject())
-}
-
-/**
  * Resets the current viewport transformation (zoom & pan)
  */
 function resetTransform() {
@@ -249,10 +242,6 @@ const uploadJson = (event: Event) => {
       <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
-      </ControlButton>
-
-      <ControlButton title="Log `toObject`" @click="logToObject">
-        <CustomIcon name="log" />
       </ControlButton>
     </Controls>
   </VueFlow>
