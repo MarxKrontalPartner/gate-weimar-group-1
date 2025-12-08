@@ -5,9 +5,6 @@
     {
       "type": "object",
       "properties": {
-        "address": {
-          "type": "string"
-        },
         "input_topic": {
           "type": "string"
         },
@@ -24,7 +21,6 @@
         }
       },
       "required": [
-        "address",
         "input_topic",
         "output_topic",
         "transformations"

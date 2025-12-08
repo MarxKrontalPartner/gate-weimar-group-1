@@ -1,13 +1,11 @@
 [
     {
-    "address": "localhost:19092",
     "input_topic": "input_topic",
     "output_topic": "output_topic",
     "transformations": [
     ]
   },
   {
-    "address": "localhost:19092",
     "input_topic": "input_topic",
     "output_topic": "output_topic",
     "transformations": [
@@ -15,7 +13,6 @@
     ]
   },
   {
-    "address": "localhost:19092",
     "input_topic": "input_topic2",
     "output_topic": "output_topic2",
     "transformations": [
