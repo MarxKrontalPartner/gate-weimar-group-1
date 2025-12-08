@@ -24,7 +24,7 @@ watch(
   (newVal) => {
     code.value = newVal ?? ''
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 const onModalToggle = () => {
@@ -63,11 +63,7 @@ const editorOptions = {
       </button>
 
       <!-- Modal with Monaco editor -->
-      <div
-        id="modal-example"
-        uk-modal="esc-close: false; bg-close: false"
-        v-if="showModal"
-      >
+      <div id="modal-example" uk-modal="esc-close: false; bg-close: false" v-if="showModal">
         <div class="uk-modal-dialog uk-modal-body">
           <h2 class="uk-modal-title">{{ props.data.content }}</h2>
 
@@ -97,6 +93,4 @@ const editorOptions = {
   </div>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

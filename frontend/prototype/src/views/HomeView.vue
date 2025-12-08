@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ConnectionMode,
-  VueFlow,
-  useVueFlow,
-  Panel,
-  type Node,
-  type Edge,
-} from '@vue-flow/core'
+import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -24,16 +17,8 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const {
-  onInit,
-  onConnect,
-  addEdges,
-  setViewport,
-  toObject,
-  fromObject,
-  removeEdges,
-  removeNodes,
-} = useVueFlow()
+const { onInit, onConnect, addEdges, setViewport, toObject, fromObject, removeEdges, removeNodes } =
+  useVueFlow()
 
 const router = useRouter()
 
@@ -339,8 +324,13 @@ const uploadJson = (event: Event) => {
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
         </button>
-        <button class="uk-button uk-button-primary uk-button-small" type="button" @click="goToTestArea"> TestArea </button>
-
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="goToTestArea"
+        >
+          TestArea
+        </button>
       </div>
     </Panel>
 

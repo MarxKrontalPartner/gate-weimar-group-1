@@ -11,9 +11,7 @@
               <option value="sql">SQL</option>
             </select>
           </div>
-          <button @click="closeEditor" :disabled="!editingCode">
-            ✓ Done
-          </button>
+          <button @click="closeEditor" :disabled="!editingCode">✓ Done</button>
         </div>
 
         <MonacoEditor
@@ -37,9 +35,7 @@
     <div class="center-panel">
       <!-- Sandbox header + toggle + back -->
       <div class="sandbox-header">
-        <div class="sandbox-title">
-          Test Area · <span>Sandbox</span>
-        </div>
+        <div class="sandbox-title">Test Area · <span>Sandbox</span></div>
 
         <div class="sandbox-actions">
           <button class="sandbox-toggle" @click="toggleSandboxBanner">
@@ -82,9 +78,7 @@
         <Background pattern-color="#aaa" :gap="16" />
 
         <Controls position="top-left">
-          <ControlButton title="Fit View" @click="fitView">
-            ⤢
-          </ControlButton>
+          <ControlButton title="Fit View" @click="fitView"> ⤢ </ControlButton>
         </Controls>
 
         <!-- Small info panel -->
@@ -145,12 +139,8 @@
           Do you want to update the main pipeline on the HomeView with the current sandbox edits?
         </p>
         <div class="save-confirm-actions">
-          <button class="btn-yes" @click="saveAndGoBack">
-            Yes, save &amp; go back
-          </button>
-          <button class="btn-no" @click="discardAndGoBack">
-            No, keep HomeView as is
-          </button>
+          <button class="btn-yes" @click="saveAndGoBack">Yes, save &amp; go back</button>
+          <button class="btn-no" @click="discardAndGoBack">No, keep HomeView as is</button>
         </div>
       </div>
     </div>
@@ -164,14 +154,7 @@ import { defineComponent, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MonacoEditor from 'monaco-editor-vue3'
 
-import {
-  ConnectionMode,
-  VueFlow,
-  useVueFlow,
-  Panel,
-  type Node,
-  type Edge,
-} from '@vue-flow/core'
+import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 
@@ -376,11 +359,7 @@ finally:
           if (typeof result === 'string') {
             otherOutput.value = result
           } else if (Array.isArray(result)) {
-            if (
-              result.length > 0 &&
-              typeof result[0] === 'object' &&
-              !Array.isArray(result[0])
-            ) {
+            if (result.length > 0 && typeof result[0] === 'object' && !Array.isArray(result[0])) {
               const first = result[0] as Record<string, unknown>
               tableColumns.value = Object.keys(first)
               tableRows.value = result as Record<string, unknown>[]
@@ -405,10 +384,7 @@ finally:
             } catch {
               otherOutput.value = String(result)
             }
-          } else if (
-            typeof result === 'number' ||
-            typeof result === 'boolean'
-          ) {
+          } else if (typeof result === 'number' || typeof result === 'boolean') {
             otherOutput.value = String(result)
           }
         }
@@ -574,7 +550,9 @@ finally:
   background: rgba(15, 23, 42, 0.6);
   color: #e2e8f0;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
 }
 
 .sandbox-toggle:hover {
