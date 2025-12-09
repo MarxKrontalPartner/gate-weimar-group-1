@@ -76,20 +76,30 @@ onMounted(() => {
     try {
       const graph = JSON.parse(savedGraph)
 
-      // update VueFlow internal state
-      fromObject(graph)
+      // Validate that nodes have required data
+      const hasValidNodes = graph.nodes?.every((n: Node) => {
+        if (n.type === 'custom-transform') {
+          return n.data && typeof (n.data as { code?: string }).code === 'string'
+        }
+        return true
+      })
 
-      // also update our local refs so the template sees the new data
-      nodes.value = graph.nodes as Node[]
-      edges.value = graph.edges as Edge[]
-
-      console.log('Loaded graph from TestArea:', graph)
+      if (hasValidNodes) {
+        fromObject(graph)
+        nodes.value = graph.nodes as Node[]
+        edges.value = graph.edges as Edge[]
+        console.log('Loaded graph from TestArea:', graph)
+      } else {
+        console.warn('Invalid graph data in sessionStorage, using initial nodes')
+        sessionStorage.removeItem('testarea_graph')
+        // Keep using initialNodes (already set as default)
+      }
     } catch (e) {
       console.error('Failed to load graph from TestArea:', e)
+      sessionStorage.removeItem('testarea_graph')
     }
   }
 
-  // make sure transformationNodeNumber reflects the current graph
   refreshTransformCounter()
 })
 
@@ -181,34 +191,41 @@ function removeNode({ node }: { node: Node }) {
   removeNodes(node.id, true)
 }
 
+
 /**
  * Add a new transform node. The node is named "Transform N"
  * where N continues from the highest existing index (including
  * any nodes loaded back from TestArea).
  */
 function addNode() {
-  // ensure counter is at least as large as what we currently have
   refreshTransformCounter()
 
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
-  nodes.value.push({
-    id,
-    position: { x: 400, y: 500 },
-    type: 'custom-transform',
-    data: {
-      content: `Transform ${transformationNodeNumber}`,
-      code: `def transform${transformationNodeNumber}(row: dict) -> dict:
+  const defaultCode = `def transform${transformationNodeNumber}(row: dict) -> dict:
     logger.info(f"before :: row :: {row}")
     for key in row:
         if key.startswith("channel_"):
             row[key] += 10
     logger.info(f"after :: row :: {row}")
     return row
-  `,
+`
+
+  const newNode = {
+    id,
+    position: { x: 400, y: 300 + Math.random() * 200 },
+    type: 'custom-transform',
+    data: {
+      content: `Transform ${transformationNodeNumber}`,
+      code: defaultCode,
     },
-  })
+  }
+
+  // Add to local nodes array
+  nodes.value = [...nodes.value, newNode]
+
+  console.log('Added new node:', newNode.id, 'with code length:', defaultCode.length)
 }
 
 /**
@@ -298,8 +315,8 @@ const uploadJson = (event: Event) => {
 
 <template>
   <VueFlow
-    v-model="nodes"
-    :edges="edges"
+    v-model:nodes="nodes"
+    v-model:edges="edges"
     :class="{ dark }"
     class="basic-flow"
     :default-viewport="{ zoom: 1 }"
