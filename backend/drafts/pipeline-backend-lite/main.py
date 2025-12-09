@@ -4,15 +4,26 @@ import json
 import time
 import docker 
 from fastapi import FastAPI, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 class PipelineInput(BaseModel):
-    address: str
     input_topic: str
     output_topic: str
     transformations: list[str]
+    allow_producer: bool = False
+    n_channels: int = 10
+    frequency: float = 1.0
 
 app = FastAPI(title="Pipeline Backend Docker Manager")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # safer than "*"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def manage_pipeline_lifecycle(pipeline: PipelineInput):
     """
@@ -27,7 +38,7 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
     network_name = os.environ.get("DOCKER_NETWORK_NAME", "pipeline-backend-lite_redpanda_network")
 
     # Prepare Environment Variables for the worker
-    env_vars = {
+    worker_env_vars = {
         "BROKER_ADDRESS": "redpanda:9092", # Use internal Docker network name
         "INPUT_TOPIC": pipeline.input_topic,
         "OUTPUT_TOPIC": pipeline.output_topic,
@@ -35,34 +46,64 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
         "TRANSFORMATIONS": json.dumps(pipeline.transformations) 
     }
 
-    container = None
+    producer_container = None
+    worker_container = None
     try:
         print(f"Spawning container for {pipeline.input_topic}...")
+
+        # --- Optional Producer ---
+        if pipeline.allow_producer:
+            print("allow_producer=True → Launching PRODUCER container...")
+
+            producer_env = {
+                "BROKER_ADDRESS": "redpanda:9092",
+                "INPUT_TOPIC": pipeline.input_topic,
+                "N_CHANNELS": str(pipeline.n_channels),
+                "FREQUENCY": str(pipeline.frequency),
+            }
+
+            producer_container = client.containers.run(
+                image=image_name,
+                command=["python", "producer.py"],
+                detach=True,
+                network=network_name,
+                environment=producer_env,
+                auto_remove=True
+            )
+            print(f"Producer container {producer_container.short_id} started.")
         
         # Run the container
-        container = client.containers.run(
+        worker_container = client.containers.run(
             image=image_name,
             command=["python", "worker.py"],
             detach=True,
             network=network_name,  
-            environment=env_vars,
-            auto_remove=False
+            environment=worker_env_vars,
+            auto_remove=False # Change this to True if you want auto cleanup and avoid dangling containers
         )
 
-        print(f"Container {container.short_id} started. Running for 120s...")
+        print(f"Container {worker_container.short_id} started. Running for 120s...")
         
         # Wait
         time.sleep(120)
 
         # Cleanup
-        print(f"Time limit reached. Stopping container {container.short_id}...")
-        container.stop() 
+        print(f"Time limit reached. Stopping container {worker_container.short_id}...")
+        worker_container.stop()
+        if pipeline.allow_producer:
+            producer_container.stop()  
 
     except Exception as e:
         print(f"Lifecycle Manager failed: {e}")
-        if container:
+        if worker_container:
             try:
-                container.stop()
+                worker_container.stop()
+            except:
+                pass
+            
+        if producer_container:
+            try:
+                producer_container.stop()
             except:
                 pass
 

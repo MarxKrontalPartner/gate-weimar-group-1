@@ -116,7 +116,7 @@ function addNode() {
   })
 }
 
-const createRequest = () => {
+const createRequest = async () => {
   const obj = toObject()
   const transformations: string[] = []
 
@@ -127,6 +127,11 @@ const createRequest = () => {
     alert('input or output node missing')
     return
   }
+
+  // -------------------------
+  // Ask user whether to allow producer
+  // -------------------------
+  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
 
   let node = inputNode
 
@@ -146,12 +151,43 @@ const createRequest = () => {
     }
   }
 
-  const request = {
-    input_topic: inputNode?.data.content,
-    output_topic: outputNode?.data.content,
+  // ----------------------------------------
+  // Build JSON payload (exactly like your cURL)
+  // ----------------------------------------
+  const payload = {
+    input_topic: inputNode.data?.content,
+    output_topic: outputNode.data?.content,
     transformations,
+    allow_producer,
+    n_channels: 10,
+    frequency: 1,
   }
-  console.log(request)
+
+  console.log('Sending payload:', payload)
+
+  // ----------------------------------------
+  // POST to FastAPI /start
+  // ----------------------------------------
+  try {
+    const res = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const msg = await res.text()
+      alert('Backend error: ' + msg)
+      return
+    }
+
+    const result = await res.json()
+    console.log('Backend response:', result)
+    alert('Pipeline started successfully!')
+  } catch (err) {
+    console.error(err)
+    alert('Failed to contact backend.')
+  }
 }
 
 const onRun = () => {

@@ -13,8 +13,6 @@ quixstreams = "^3.23.1"
 click = "^8.3.0"
 jupyter = "^1.1.1"
 ruff = "^0.14.2"
-fastapi = "^0.123.9"
-uvicorn = "^0.38.0"
 
 
 [build-system]

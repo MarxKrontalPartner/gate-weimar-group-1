@@ -75,3 +75,19 @@ services:
       - BROKER_ADDRESS=redpanda:9092
     depends_on:
       - redpanda
+
+  # ------------- FRONTEND -------------
+  frontend:
+    build:
+      context: ../../../frontend/prototype
+      dockerfile: Dockerfile
+    container_name: pipeline_frontend
+    ports:
+      - "5173:5173"   # matches the dev server port
+    depends_on:
+      - pipeline-manager
+    networks:
+      - redpanda_network
+    volumes:
+      - ../../../frontend/prototype:/app  # mount code for hot reload
+      - /app/node_modules                # prevent node_modules overwrite
