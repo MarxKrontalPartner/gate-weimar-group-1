@@ -131,8 +131,7 @@ const createRequest = async () => {
   // -------------------------
   // Ask user whether to allow producer
   // -------------------------
-  const allow = confirm('Allow producer? OK = True, Cancel = False')
-  const allow_producer = allow ? true : false
+  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
 
   let node = inputNode
 
@@ -156,8 +155,8 @@ const createRequest = async () => {
   // Build JSON payload (exactly like your cURL)
   // ----------------------------------------
   const payload = {
-    input_topic: inputNode.data?.content ?? inputNode.id,
-    output_topic: outputNode.data?.content ?? outputNode.id,
+    input_topic: inputNode.data?.content,
+    output_topic: outputNode.data?.content,
     transformations,
     allow_producer,
     n_channels: 10,
@@ -170,7 +169,7 @@ const createRequest = async () => {
   // POST to FastAPI /start
   // ----------------------------------------
   try {
-    const res = await fetch('http://localhost:8000/start', {
+    const res = await fetch('/api/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(payload),
