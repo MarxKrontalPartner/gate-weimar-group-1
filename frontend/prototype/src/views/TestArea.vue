@@ -55,7 +55,10 @@
           <div class="placeholder-content">
             <div class="placeholder-icon">📝</div>
             <h3>No Transform Selected</h3>
-            <p>Click a <strong>Transform</strong> node in the graph on the right to edit its code here.</p>
+            <p>
+              Click a <strong>Transform</strong> node in the graph on the right to edit its code
+              here.
+            </p>
           </div>
         </div>
 
@@ -89,7 +92,10 @@
         <div v-if="runExecuted" class="output-section">
           <h3 class="output-title">Output</h3>
           <div class="results-pane">
-            <div class="validation-message" :class="{ error: !!errorOutput, success: !errorOutput }">
+            <div
+              class="validation-message"
+              :class="{ error: !!errorOutput, success: !errorOutput }"
+            >
               <span v-if="!errorOutput">✅ Transformation code executed successfully.</span>
               <span v-else>❌ An error occurred during execution.</span>
             </div>
@@ -203,7 +209,8 @@
           </div>
           <div class="modal-body">
             <p>
-              Do you want to update the main pipeline on the HomeView with the current sandbox edits?
+              Do you want to update the main pipeline on the HomeView with the current sandbox
+              edits?
             </p>
           </div>
           <div class="modal-footer">
@@ -233,12 +240,8 @@
             </p>
           </div>
           <div class="modal-footer">
-            <button class="btn-secondary" @click="handleKeepInput">
-              No, keep current input
-            </button>
-            <button class="btn-primary" @click="handleClearInput">
-              Yes, clear input
-            </button>
+            <button class="btn-secondary" @click="handleKeepInput">No, keep current input</button>
+            <button class="btn-primary" @click="handleClearInput">Yes, clear input</button>
           </div>
         </div>
       </div>
@@ -297,7 +300,9 @@ interface PyodideInterface {
 }
 
 interface PyProxy {
-  toJs: (options?: { dict_converter?: (entries: Iterable<[string, unknown]>) => unknown }) => unknown
+  toJs: (options?: {
+    dict_converter?: (entries: Iterable<[string, unknown]>) => unknown
+  }) => unknown
   destroy: () => void
 }
 
@@ -321,7 +326,7 @@ interface MonacoGlobal {
         endColumn: number
         message: string
         severity: number
-      }>
+      }>,
     ) => void
   }
   MarkerSeverity: {
@@ -531,7 +536,7 @@ export default defineComponent({
     const showAlert = (
       title: string,
       message: string,
-      type: 'info' | 'warning' | 'error' = 'info'
+      type: 'info' | 'warning' | 'error' = 'info',
     ): void => {
       alertModal.value = {
         show: true,
@@ -696,7 +701,12 @@ export default defineComponent({
         code: transformationCode.value,
       })
 
-      console.log('Synced code to node:', activeTransformId.value, 'length:', transformationCode.value.length)
+      console.log(
+        'Synced code to node:',
+        activeTransformId.value,
+        'length:',
+        transformationCode.value.length,
+      )
     }
 
     /**
@@ -795,8 +805,8 @@ export default defineComponent({
     }
 
     /**
-    * Handles Monaco editor content changes
-    */
+     * Handles Monaco editor content changes
+     */
     const handleEditorChange = (newValue: string): void => {
       transformationCode.value = newValue
     }
@@ -946,7 +956,7 @@ export default defineComponent({
         showAlert(
           'No Input Data',
           `Please enter a JSON object in the Input Data field.\n\nExample: ${EXAMPLE_JSON}`,
-          'warning'
+          'warning',
         )
         errorOutput.value = `No input data. Example: ${EXAMPLE_JSON}`
         runExecuted.value = true
@@ -960,7 +970,7 @@ export default defineComponent({
           showAlert(
             'Invalid Input Format',
             `Please provide a JSON object (not an array or primitive).\n\nExample: ${EXAMPLE_JSON}`,
-            'warning'
+            'warning',
           )
           errorOutput.value = `Input must be a JSON object. Example: ${EXAMPLE_JSON}`
           runExecuted.value = true
@@ -973,7 +983,7 @@ export default defineComponent({
         showAlert(
           'Invalid JSON',
           `Failed to parse JSON input: ${message}\n\nExample: ${EXAMPLE_JSON}`,
-          'error'
+          'error',
         )
         errorOutput.value = `Invalid JSON input: ${message}. Example: ${EXAMPLE_JSON}`
         runExecuted.value = true
@@ -985,7 +995,7 @@ export default defineComponent({
      * Builds the Python wrapper code that executes user code
      */
     const buildPythonWrapper = (userCode: string): string => {
-  return `
+      return `
 import sys
 import logging
 
@@ -1030,7 +1040,7 @@ else:
 
 _result
 `
-}
+    }
 
     /**
      * Processes the result of Python execution into the appropriate output format
@@ -1138,7 +1148,7 @@ _result
         showAlert(
           'Python Not Ready',
           'The Python runtime is still loading. Please wait a moment and try again.',
-          'warning'
+          'warning',
         )
         return
       }
@@ -1147,7 +1157,7 @@ _result
         showAlert(
           'No Transform Selected',
           'Please click on a Transform node in the graph to select it before running.',
-          'warning'
+          'warning',
         )
         return
       }
@@ -1202,7 +1212,11 @@ _result
 
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
-            reject(new Error('Execution timed out after 5 seconds. Your code may contain an infinite loop.'))
+            reject(
+              new Error(
+                'Execution timed out after 5 seconds. Your code may contain an infinite loop.',
+              ),
+            )
           }, PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS)
 
           executionAbortController.value?.signal.addEventListener('abort', () => {
@@ -1276,7 +1290,7 @@ _result
                 type: n.type,
                 hasCode: !!(n.data as TransformNodeData)?.code,
                 codePreview: (n.data as TransformNodeData)?.code?.substring(0, 30),
-              }))
+              })),
             )
           }
           if (graph.edges && Array.isArray(graph.edges)) {

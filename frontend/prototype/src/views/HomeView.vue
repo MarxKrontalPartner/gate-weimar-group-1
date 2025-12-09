@@ -191,7 +191,6 @@ function removeNode({ node }: { node: Node }) {
   removeNodes(node.id, true)
 }
 
-
 /**
  * Add a new transform node. The node is named "Transform N"
  * where N continues from the highest existing index (including
