@@ -20,7 +20,7 @@ const onInput = (event: InputEvent) => {
   <div class="container dark">
     <input
       id="inputnode"
-      :placeholder="data.content"
+      :value="data.content"
       class="nodrag uk-input input-nodes"
       type="text"
       aria-label="Input"
