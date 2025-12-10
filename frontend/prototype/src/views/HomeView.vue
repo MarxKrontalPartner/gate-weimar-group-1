@@ -128,11 +128,6 @@ const createRequest = async () => {
     return
   }
 
-  // -------------------------
-  // Ask user whether to allow producer
-  // -------------------------
-  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
-
   let node = inputNode
 
   while (true) {
@@ -150,6 +145,11 @@ const createRequest = async () => {
       break
     }
   }
+
+  // -------------------------
+  // Ask user whether to allow producer
+  // -------------------------
+  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
 
   // ----------------------------------------
   // Build JSON payload (exactly like your cURL)
