@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -9,6 +9,7 @@ import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
+import UIkit from 'uikit'
 
 /**
  * `useVueFlow` provides:
@@ -16,17 +17,8 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const {
-  onInit,
-  onConnect,
-  addEdges,
-  setViewport,
-  toObject,
-  fromObject,
-  removeEdges,
-  removeNodes,
-  getOutgoers,
-} = useVueFlow()
+const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
+  useVueFlow()
 
 const nodes = ref(initialNodes)
 
@@ -76,9 +68,9 @@ onConnect((connection) => {
 /**
  * toObject transforms your current graph data to an easily persist-able object
  */
-function logToObject() {
-  console.log(toObject())
-}
+// function logToObject() {
+//   console.log(toObject())
+// }
 
 /**
  * Resets the current viewport transformation (zoom & pan)
@@ -90,6 +82,18 @@ function logToObject() {
 function toggleDarkMode() {
   dark.value = !dark.value
 }
+
+watch(
+  dark,
+  (newDarkValue) => {
+    if (newDarkValue) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
+  },
+  { immediate: true },
+)
 
 function removeEdge({ edge }: { edge: Edge }) {
   removeEdges(edge.id)
@@ -106,7 +110,7 @@ function removeNode() {
 
 function delConfirm({ node }: { node: Node }) {
   nodeToDeleteId.value = node.id
-  UIkit.modal('#del-com').show()
+  UIkit.modal('#del-confirm').show()
 }
 
 let transformationNodeNumber = 2
@@ -320,33 +324,23 @@ const uploadJson = (event: Event) => {
     </template>
 
     <template #node-custom-transform="props">
-      <CustomTransformNode :id="props.id" :data="props.data" />
+      <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
     </template>
 
     <Background pattern-color="#aaa" :gap="16" />
 
     <MiniMap node-color="#2b2b32" style="margin-bottom: 55px" />
     <Controls position="bottom-right" style="border: 1px; border-color: black; border-style: solid">
-      <!-- <ControlButton title="Reset Transform" @click="resetTransform">
-        <CustomIcon name="reset" />
-      </ControlButton> -->
-
-      <!-- <ControlButton title="Shuffle Node Positions" @click="updatePos">
-        <Icon name="update" />
-      </ControlButton> -->
-
       <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
       </ControlButton>
     </Controls>
   </VueFlow>
-  <div id="del-com" uk-modal>
+  <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">Delete Node Confirmation</h2>
-      <p style="color: white">
-        Are you sure you want to delete this node? This action cannot be undone
-      </p>
+      <p>Are you sure you want to delete this node? This action cannot be undone</p>
       <p class="uk-text-right">
         <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
         <button class="uk-button uk-delete-button uk-modal-close" @click="removeNode" type="button">

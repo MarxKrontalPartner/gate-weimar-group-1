@@ -6,7 +6,9 @@ import { useVueFlow } from '@vue-flow/core'
 
 const { updateNodeData } = useVueFlow()
 const showModal = ref(false)
-const props = defineProps(['id', 'data'])
+const props = defineProps(['id', 'data', 'isDark'])
+
+//props specifically for light/dark mode
 
 const reactiveData = reactive(props.data)
 
@@ -56,7 +58,7 @@ const editorOptions = {
           <CodeEditor
             v-model:value="reactiveData.code"
             language="python"
-            theme="vs-dark"
+            :theme="isDark ? 'vs-dark' : 'vs-light'"
             :options="editorOptions"
           />
         </div>

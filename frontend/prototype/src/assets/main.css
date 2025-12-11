@@ -28,6 +28,24 @@
   --mkpDarkNav: #2b2b32;
 }
 
+.uk-modal-dialog {
+  background-color: #ffffff !important;
+}
+
+.uk-modal-title {
+  color: black !important;
+}
+
+body.dark-mode .uk-modal-title {
+  color: white !important;
+}
+
+/* Modal Styling in Dark Mode */
+body.dark-mode .uk-modal-dialog {
+  background-color: #4b4b5e !important;
+  color: #f0f0f0;
+}
+
 .uk-navbar-container {
   background-color: var(--mkpDarkNav) !important;
   width: 100vw !important;
