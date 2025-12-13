@@ -368,7 +368,7 @@ const ROUTE_NAMES = {
 
 const PYODIDE_CONFIG = {
   INDEX_URL: 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/',
-  EXECUTION_TIMEOUT_MS: 5000,
+  EXECUTION_TIMEOUT_MS: 30000, // Increased to 30 seconds for complex transformations
 } as const
 
 const EXAMPLE_JSON = '{"channel_1": 1, "channel_2": 2}'
@@ -559,6 +559,11 @@ export default defineComponent({
     const formatCellValue = (value: unknown): string => {
       if (value === null) return 'null'
       if (value === undefined) return 'undefined'
+      if (typeof value === 'boolean') return value ? '✓ true' : '✗ false'
+      if (typeof value === 'number') {
+        if (Number.isInteger(value)) return String(value)
+        return value.toFixed(4)
+      }
       if (typeof value === 'object') {
         try {
           return JSON.stringify(value)
@@ -582,21 +587,47 @@ export default defineComponent({
     }
 
     /**
-     * Safely converts a PyProxy to a JavaScript value and destroys the proxy
+     * Recursively converts PyProxy and Map objects to plain JS objects
+     * This is critical for proper result handling
      */
-    const convertPyProxy = (proxy: PyProxy): unknown => {
-      try {
-        const jsValue = proxy.toJs({ dict_converter: Object.fromEntries })
-        return jsValue
-      } catch {
-        return proxy
-      } finally {
+    const deepConvertToJS = (obj: unknown): unknown => {
+      if (obj === null || obj === undefined) return obj
+
+      // Handle PyProxy
+      if (isPyProxy(obj)) {
         try {
-          proxy.destroy()
+          const converted = obj.toJs({ dict_converter: Object.fromEntries })
+          obj.destroy()
+          return deepConvertToJS(converted)
         } catch {
-          // Ignore destruction errors
+          return obj
         }
       }
+
+      // Handle Map (Pyodide returns Maps for Python dicts)
+      if (obj instanceof Map) {
+        const plain: Record<string, unknown> = {}
+        obj.forEach((value, key) => {
+          plain[String(key)] = deepConvertToJS(value)
+        })
+        return plain
+      }
+
+      // Handle Array
+      if (Array.isArray(obj)) {
+        return obj.map((item) => deepConvertToJS(item))
+      }
+
+      // Handle plain object
+      if (typeof obj === 'object') {
+        const plain: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(obj)) {
+          plain[key] = deepConvertToJS(value)
+        }
+        return plain
+      }
+
+      return obj
     }
 
     /**
@@ -640,7 +671,8 @@ export default defineComponent({
       const match = errorMessage.match(/line\s+(\d+)/i)
       if (match && match[1]) {
         const lineNum = Number.parseInt(match[1], 10)
-        const adjustedLine = lineNum - 10
+        // Adjust for wrapper code offset (approximately 35 lines of wrapper before user code)
+        const adjustedLine = lineNum - 35
         return adjustedLine > 0 ? adjustedLine : lineNum
       }
       return null
@@ -720,6 +752,7 @@ export default defineComponent({
       tableColumns.value = []
       tableRows.value = []
       runExecuted.value = false
+      clearEditorMarkers()
     }
 
     /**
@@ -755,6 +788,7 @@ export default defineComponent({
 
     /**
      * Handles node click events from Vue Flow
+     * FIXED: Always clears outputs when switching nodes
      */
     const handleNodeClick = (event: NodeMouseEvent): void => {
       const clickedNodeId = event.node.id
@@ -779,10 +813,8 @@ export default defineComponent({
         syncEditorToNode()
       }
 
-      // Clear outputs if we had run before
-      if (runExecuted.value) {
-        clearOutputs()
-      }
+      // IMPORTANT: Always clear outputs when switching nodes
+      clearOutputs()
 
       // Find the node in our local nodes array (this has the full data)
       const targetNode = nodes.value.find((n) => n.id === clickedNodeId)
@@ -936,7 +968,12 @@ export default defineComponent({
           consoleOutput.value += text + '\n'
         },
         stderr: (text: string) => {
-          errorOutput.value += text + '\n'
+          // Only add to error output if it looks like an actual error
+          if (text.includes('Error') || text.includes('Traceback')) {
+            errorOutput.value += text + '\n'
+          } else {
+            consoleOutput.value += text + '\n'
+          }
         },
       })
 
@@ -993,52 +1030,163 @@ export default defineComponent({
 
     /**
      * Builds the Python wrapper code that executes user code
+     * FIXED: Complete state reset and auto-detect ANY function name
      */
     const buildPythonWrapper = (userCode: string): string => {
+      // Generate unique run ID to ensure fresh execution each time
+      const runId = Date.now()
+
       return `
 import sys
-import logging
+import json
+from io import StringIO
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', force=True)
-logger = logging.getLogger('transform')
+# ============================================================================
+# COMPLETE STATE RESET - Clear ALL user-defined names from previous runs
+# ============================================================================
+_protected_names = {
+    'sys', 'json', 'StringIO', '__builtins__', '__name__', '__doc__',
+    '__js_input', '_run_id_${runId}', 'print', 'len', 'range', 'str',
+    'int', 'float', 'list', 'dict', 'set', 'tuple', 'bool', 'type',
+    'isinstance', 'hasattr', 'getattr', 'setattr', 'delattr', 'callable',
+    'sum', 'min', 'max', 'abs', 'round', 'sorted', 'reversed', 'enumerate',
+    'zip', 'map', 'filter', 'any', 'all', 'open', 'True', 'False', 'None'
+}
 
-# IMPORTANT: Delete any existing transform functions from previous runs
-for _name in list(globals().keys()):
-    if _name.startswith('transform') or _name in ('main', 'run', 'process'):
-        try:
-            del globals()[_name]
-        except:
-            pass
+_names_to_delete = [
+    k for k in list(globals().keys())
+    if k not in _protected_names and not k.startswith('__')
+]
+for _name in _names_to_delete:
+    try:
+        del globals()[_name]
+    except:
+        pass
 
-def _convert_to_python(obj):
+# ============================================================================
+# STDOUT/STDERR CAPTURE
+# ============================================================================
+_stdout_buffer = StringIO()
+_stderr_buffer = StringIO()
+_original_stdout = sys.stdout
+_original_stderr = sys.stderr
+sys.stdout = _stdout_buffer
+sys.stderr = _stderr_buffer
+
+# ============================================================================
+# LOGGER CLASS
+# ============================================================================
+class Logger:
+    def info(self, msg): print(f"INFO: {msg}")
+    def warning(self, msg): print(f"WARNING: {msg}")
+    def warn(self, msg): print(f"WARNING: {msg}")
+    def error(self, msg): print(f"ERROR: {msg}")
+    def debug(self, msg): print(f"DEBUG: {msg}")
+
+logger = Logger()
+
+# ============================================================================
+# INPUT CONVERSION - Handle JS to Python conversion
+# ============================================================================
+def _convert_js_to_python(obj):
     if hasattr(obj, 'to_py'):
-        return obj.to_py()
+        result = obj.to_py()
+        if isinstance(result, dict):
+            return dict(result)
+        return result
     return obj
 
-__js_input = _convert_to_python(__js_input)
-if isinstance(__js_input, dict):
-    __js_input = dict(__js_input)
+_input_data = _convert_js_to_python(__js_input)
+if isinstance(_input_data, dict):
+    _input_data = dict(_input_data)
 
+# ============================================================================
+# TRACK FUNCTIONS BEFORE USER CODE
+# ============================================================================
+_functions_before = {k for k, v in globals().items() if callable(v)}
+
+# ============================================================================
+# USER CODE EXECUTION
+# ============================================================================
 ${userCode}
+# ============================================================================
+# END USER CODE
+# ============================================================================
+
+# ============================================================================
+# FIND AND EXECUTE USER FUNCTIONS
+# ============================================================================
+_functions_after = {
+    k for k, v in globals().items()
+    if callable(v) and not k.startswith('_') and k != 'Logger'
+}
+_user_functions = _functions_after - _functions_before
 
 _result = None
+_function_found = False
+_tried_functions = []
 
-if 'transform' in dir() and callable(transform):
-    _result = transform(__js_input)
-elif 'transform1' in dir() and callable(transform1):
-    _result = transform1(__js_input)
-elif 'transform2' in dir() and callable(transform2):
-    _result = transform2(__js_input)
-elif 'main' in dir() and callable(main):
-    _result = main(__js_input)
-elif 'row' in dir():
-    _result = row
-elif 'output' in dir():
-    _result = output
-else:
-    _result = __js_input
+# Priority order for function names
+_priority_names = ['transform', 'main', 'process', 'run', 'execute', 'handle', 'compute']
 
-_result
+# First, try priority function names
+for _fname in _priority_names:
+    if _fname in globals() and callable(globals()[_fname]):
+        _tried_functions.append(_fname)
+        try:
+            _result = globals()[_fname](_input_data)
+            _function_found = True
+            break
+        except Exception as e:
+            print(f"Error calling {_fname}: {e}")
+
+# If not found, try transform1, transform2, ... transform99
+if not _function_found:
+    for i in range(1, 100):
+        _fname = f'transform{i}'
+        if _fname in globals() and callable(globals()[_fname]):
+            _tried_functions.append(_fname)
+            try:
+                _result = globals()[_fname](_input_data)
+                _function_found = True
+                break
+            except Exception as e:
+                print(f"Error calling {_fname}: {e}")
+
+# If still not found, try ANY user-defined function
+if not _function_found and _user_functions:
+    for _fname in sorted(_user_functions):
+        if _fname not in _tried_functions and _fname != 'logger':
+            _tried_functions.append(_fname)
+            try:
+                _func = globals()[_fname]
+                _result = _func(_input_data)
+                _function_found = True
+                print(f"Called function: {_fname}")
+                break
+            except Exception as e:
+                print(f"Error calling {_fname}: {e}")
+
+# ============================================================================
+# RESTORE STDOUT/STDERR AND COLLECT OUTPUT
+# ============================================================================
+sys.stdout = _original_stdout
+sys.stderr = _original_stderr
+
+_captured_stdout = _stdout_buffer.getvalue()
+_captured_stderr = _stderr_buffer.getvalue()
+
+# ============================================================================
+# RETURN RESULT DICTIONARY
+# ============================================================================
+{
+    "result": _result,
+    "stdout": _captured_stdout,
+    "stderr": _captured_stderr,
+    "function_found": _function_found,
+    "tried_functions": _tried_functions,
+    "user_functions": list(_user_functions)
+}
 `
     }
 
@@ -1141,7 +1289,36 @@ _result
     }
 
     /**
+     * Clears Pyodide global state before execution
+     * This prevents cached functions from previous runs from interfering
+     */
+    const clearPyodideGlobals = (): void => {
+      if (!pyodideInstance) return
+
+      const globalsToDelete = [
+        '__js_input', '_result', '_input_data', '_function_found',
+        '_tried_functions', '_user_functions', '_functions_before', '_functions_after',
+        'transform', 'transform1', 'transform2', 'transform3', 'transform4',
+        'transform5', 'transform6', 'transform7', 'transform8', 'transform9',
+        'transform10', 'main', 'run', 'process', 'execute', 'handle', 'compute',
+        'row', 'output', 'result', 'data', 'input_data', 'logger', 'Logger',
+        '_stdout_buffer', '_stderr_buffer', '_original_stdout', '_original_stderr',
+        '_captured_stdout', '_captured_stderr', '_convert_js_to_python',
+        '_protected_names', '_names_to_delete', '_priority_names', '_fname', '_func'
+      ]
+
+      for (const name of globalsToDelete) {
+        try {
+          pyodideInstance.globals.delete(name)
+        } catch {
+          // Ignore errors when deleting non-existent globals
+        }
+      }
+    }
+
+    /**
      * Runs the transformation code with timeout
+     * FIXED: Properly clears state and handles results
      */
     const handleRunTransformation = async (): Promise<void> => {
       if (!pyodideInstance) {
@@ -1162,8 +1339,10 @@ _result
         return
       }
 
+      // Sync current code to node
       syncEditorToNode()
 
+      // IMPORTANT: Clear ALL output state before each run
       consoleOutput.value = ''
       errorOutput.value = ''
       otherOutput.value = ''
@@ -1173,6 +1352,7 @@ _result
       runExecuted.value = false
       clearEditorMarkers()
 
+      // Validate input
       const rawInput = inputData.value.trim()
       const inputObj = validateInputJson(rawInput)
       if (!inputObj) {
@@ -1184,37 +1364,27 @@ _result
       startCountdown()
 
       try {
-        try {
-          pyodideInstance.globals.delete('__js_input')
-          pyodideInstance.globals.delete('_result')
-          pyodideInstance.globals.delete('_candidate')
-          pyodideInstance.globals.delete('_candidate_name')
-          pyodideInstance.globals.delete('transform')
-          pyodideInstance.globals.delete('transform1')
-          pyodideInstance.globals.delete('transform2')
-          pyodideInstance.globals.delete('main')
-          pyodideInstance.globals.delete('run')
-          pyodideInstance.globals.delete('row')
-          pyodideInstance.globals.delete('output')
-          pyodideInstance.globals.delete('result')
-        } catch {
-          // Ignore errors when deleting non-existent globals
-        }
+        // IMPORTANT: Clear Pyodide globals before execution to prevent caching issues
+        clearPyodideGlobals()
 
+        // Set input in Pyodide globals
         pyodideInstance.globals.set('__js_input', inputObj)
 
         const userCode = transformationCode.value
         console.log('==== CODE BEING EXECUTED ====')
         console.log(userCode)
+        console.log('==== INPUT DATA ====')
+        console.log(inputObj)
         console.log('=============================')
 
         const wrappedCode = buildPythonWrapper(userCode)
 
+        // Execute with timeout
         const timeoutPromise = new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
             reject(
               new Error(
-                'Execution timed out after 5 seconds. Your code may contain an infinite loop.',
+                `Execution timed out after ${PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS / 1000} seconds. Your code may contain an infinite loop.`,
               ),
             )
           }, PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS)
@@ -1225,21 +1395,66 @@ _result
           })
         })
 
-        let result: unknown = await Promise.race([
+        const rawResult: unknown = await Promise.race([
           pyodideInstance.runPythonAsync(wrappedCode),
           timeoutPromise,
         ])
 
         runExecuted.value = true
 
-        if (isPyProxy(result)) {
-          result = convertPyProxy(result as PyProxy)
+        // Deep convert PyProxy/Map objects to plain JS
+        const result = deepConvertToJS(rawResult) as {
+          result?: unknown
+          stdout?: string
+          stderr?: string
+          function_found?: boolean
+          tried_functions?: string[]
+          user_functions?: string[]
+        } | null
+
+        console.log('==== EXECUTION RESULT ====')
+        console.log(result)
+        console.log('==========================')
+
+        // Process the result
+        if (result && typeof result === 'object') {
+          // Add captured stdout to console output
+          if (result.stdout) {
+            consoleOutput.value += result.stdout
+          }
+
+          // Add captured stderr to error output (if any)
+          if (result.stderr && result.stderr.trim()) {
+            errorOutput.value += result.stderr
+          }
+
+          // Log debug info
+          if (result.tried_functions) {
+            console.log('Tried functions:', result.tried_functions)
+          }
+          if (result.user_functions) {
+            console.log('User functions found:', result.user_functions)
+          }
+
+          // Check if a function was found
+          if (!result.function_found) {
+            consoleOutput.value +=
+              '\n⚠️ No transform function found. Define a function like:\n' +
+              'def transform(row: dict) -> dict:\n' +
+              '    # your code here\n' +
+              '    return row\n'
+          }
+
+          // Process the actual result
+          const actualResult = deepConvertToJS(result.result)
+          processExecutionResult(actualResult)
+        } else {
+          processExecutionResult(result)
         }
 
-        processExecutionResult(result)
-
-        if (!consoleOutput.value && !otherOutput.value && !tableOutput.value) {
-          consoleOutput.value = '(No output, code executed successfully)'
+        // Ensure we show something if nothing else was output
+        if (!consoleOutput.value && !otherOutput.value && !tableOutput.value && !errorOutput.value) {
+          consoleOutput.value = '(Code executed successfully with no output)'
         }
 
         clearEditorMarkers()
@@ -1249,6 +1464,9 @@ _result
         const errMsg = err instanceof Error ? err.message : String(err)
         errorOutput.value = errMsg
 
+        console.error('Execution error:', errMsg)
+
+        // Try to set error marker in editor
         const lineNumber = extractLineNumberFromError(errMsg)
         if (lineNumber !== null) {
           setEditorErrorMarker(lineNumber, errMsg)
@@ -1258,11 +1476,9 @@ _result
         isExecuting.value = false
         executionAbortController.value = null
 
+        // Clean up Pyodide globals
         try {
           pyodideInstance?.globals.delete('__js_input')
-          pyodideInstance?.globals.delete('_result')
-          pyodideInstance?.globals.delete('_candidate')
-          pyodideInstance?.globals.delete('_candidate_name')
         } catch {
           // Ignore cleanup errors
         }
