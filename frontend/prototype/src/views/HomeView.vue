@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -9,6 +9,7 @@ import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
+import UIkit from 'uikit'
 
 /**
  * `useVueFlow` provides:
@@ -16,17 +17,8 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const {
-  onInit,
-  onConnect,
-  addEdges,
-  setViewport,
-  toObject,
-  fromObject,
-  removeEdges,
-  removeNodes,
-  getOutgoers,
-} = useVueFlow()
+const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
+  useVueFlow()
 
 const nodes = ref(initialNodes)
 
@@ -61,35 +53,64 @@ onConnect((connection) => {
  * 2. Use the `updateNode` method (from `useVueFlow`) to update the node(s)
  * 3. Create a new array of nodes and pass it to the `nodes` ref
  */
-function updatePos() {
-  nodes.value = nodes.value.map((node: Node) => {
-    return {
-      ...node,
-      position: {
-        x: Math.random() * 400,
-        y: Math.random() * 400,
-      },
-    }
-  })
-}
+// function updatePos() {
+//   nodes.value = nodes.value.map((node: Node) => {
+//     return {
+//       ...node,
+//       position: {
+//         x: Math.random() * 400,
+//         y: Math.random() * 400,
+//       },
+//     }
+//   })
+// }
+
+/**
+ * toObject transforms your current graph data to an easily persist-able object
+ */
+// function logToObject() {
+//   console.log(toObject())
+// }
 
 /**
  * Resets the current viewport transformation (zoom & pan)
  */
-function resetTransform() {
-  setViewport({ x: 0, y: 0, zoom: 1 })
-}
+// function resetTransform() {
+//   setViewport({ x: 0, y: 0, zoom: 1 })
+// }
 
 function toggleDarkMode() {
   dark.value = !dark.value
 }
 
+watch(
+  dark,
+  (newDarkValue) => {
+    if (newDarkValue) {
+      document.body.classList.add('dark-mode')
+    } else {
+      document.body.classList.remove('dark-mode')
+    }
+  },
+  { immediate: true },
+)
+
 function removeEdge({ edge }: { edge: Edge }) {
   removeEdges(edge.id)
 }
 
-function removeNode({ node }: { node: Node }) {
-  removeNodes(node.id, true)
+const nodeToDeleteId = ref('')
+
+function removeNode() {
+  if (nodeToDeleteId.value != '') {
+    removeNodes(nodeToDeleteId.value)
+    nodeToDeleteId.value = ''
+  }
+}
+
+function delConfirm({ node }: { node: Node }) {
+  nodeToDeleteId.value = node.id
+  UIkit.modal('#del-confirm').show()
 }
 
 let transformationNodeNumber = 2
@@ -272,10 +293,11 @@ const uploadJson = (event: Event) => {
     :min-zoom="0.2"
     :max-zoom="4"
     @edge-double-click="removeEdge"
-    @node-double-click="removeNode"
+    @node-double-click="delConfirm"
     :connection-mode="ConnectionMode.Strict"
   >
-    <Panel position="top-right">
+    <!-- <AppBar /> -->
+    <Panel position="bottom-center">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
           Add a node
@@ -302,26 +324,35 @@ const uploadJson = (event: Event) => {
     </template>
 
     <template #node-custom-transform="props">
-      <CustomTransformNode :id="props.id" :data="props.data" />
+      <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
     </template>
 
     <Background pattern-color="#aaa" :gap="16" />
 
-    <MiniMap />
-
-    <Controls position="top-left">
-      <ControlButton title="Reset Transform" @click="resetTransform">
-        <CustomIcon name="reset" />
-      </ControlButton>
-
-      <ControlButton title="Shuffle Node Positions" @click="updatePos">
-        <CustomIcon name="update" />
-      </ControlButton>
-
+    <MiniMap node-color="#2b2b32" style="margin-bottom: 55px" />
+    <Controls position="bottom-right" style="border: 1px; border-color: black; border-style: solid">
       <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
       </ControlButton>
     </Controls>
   </VueFlow>
+  <div id="del-confirm" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
+      <h2 class="uk-modal-title">Delete Node Confirmation</h2>
+      <p>Are you sure you want to delete this node? This action cannot be undone</p>
+      <p class="uk-text-right">
+        <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
+        <button class="uk-button uk-delete-button uk-modal-close" @click="removeNode" type="button">
+          Confirm
+        </button>
+      </p>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+.vue-flow :deep(.vue-flow__minimap) {
+  border: 2px solid black;
+}
+</style>

@@ -6,7 +6,9 @@ import { useVueFlow } from '@vue-flow/core'
 
 const { updateNodeData } = useVueFlow()
 const showModal = ref(false)
-const props = defineProps(['id', 'data'])
+const props = defineProps(['id', 'data', 'isDark'])
+
+//props specifically for light/dark mode
 
 const reactiveData = reactive(props.data)
 
@@ -43,8 +45,9 @@ const editorOptions = {
       @click="onModalToggle"
       class="uk-button uk-button-primary uk-button-small"
       uk-toggle="target: #modal-example"
+      style="border-radius: 3px; width: auto"
     >
-      Code
+      Edit Code
     </button>
 
     <!-- This is the modal -->
@@ -55,14 +58,14 @@ const editorOptions = {
           <CodeEditor
             v-model:value="reactiveData.code"
             language="python"
-            theme="vs-dark"
+            :theme="isDark ? 'vs-dark' : 'vs-light'"
             :options="editorOptions"
           />
         </div>
         <p class="uk-text-right">
           <button
             @click="onSave"
-            class="uk-button uk-modal-close uk-button-primary uk-button-small"
+            class="uk-button uk-modal-close uk-save-button uk-button-small"
             type="button"
           >
             Save
@@ -70,7 +73,7 @@ const editorOptions = {
         </p>
       </div>
     </div>
-
-    <Handle type="source" :position="Position.Right" :connectable="1" />
   </div>
+
+  <Handle type="source" :position="Position.Right" :connectable="1" />
 </template>
