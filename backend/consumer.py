@@ -1,7 +1,7 @@
 from quixstreams import Application
 import uuid
 
-from gate_weimar.logger import get_logger
+from logger import get_logger
 
 
 class Consumer:

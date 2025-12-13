@@ -1,3 +1,4 @@
+# producer.py
 import random
 import time
 from datetime import datetime, timezone
@@ -7,6 +8,7 @@ from quixstreams.models.messages import KafkaMessage
 
 
 from logger import get_logger
+import os
 
 
 class Producer:
@@ -110,10 +112,16 @@ class Producer:
         }
 
 if __name__ == "__main__":
+
+    broker_address = os.environ.get("BROKER_ADDRESS", "redpanda:9092")
+    input_topic_name = os.environ["INPUT_TOPIC"]
+    n_channels = int(os.environ.get("N_CHANNELS", "10"))
+    frequency = float(os.environ.get("FREQUENCY", "1.0"))
     producer = Producer(
-        broker_address="localhost:19092",
-        topic_name="input_topic",
-        n_channels=10,
-        frequency=1.0,
+        broker_address=broker_address,
+        topic_name=input_topic_name,
+        n_channels=n_channels,
+        frequency=frequency,
     )
     producer.produce()
+    print("Producer has stopped.")

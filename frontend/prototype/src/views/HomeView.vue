@@ -17,8 +17,17 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const { onInit, onConnect, addEdges, setViewport, toObject, fromObject, removeEdges, removeNodes } =
-  useVueFlow()
+const {
+  onInit,
+  onConnect,
+  addEdges,
+  setViewport,
+  toObject,
+  fromObject,
+  removeEdges,
+  removeNodes,
+  getOutgoers,
+} = useVueFlow()
 
 const router = useRouter()
 
@@ -165,15 +174,7 @@ function updatePos() {
 }
 
 /**
- * toObject transforms your current graph data to an easily persist-able object.
- * Useful for debugging or exporting.
- */
-function logToObject() {
-  console.log(toObject())
-}
-
-/**
- * Resets the current viewport transformation (zoom & pan).
+ * Resets the current viewport transformation (zoom & pan)
  */
 function resetTransform() {
   setViewport({ x: 0, y: 0, zoom: 1 })
@@ -227,16 +228,82 @@ function addNode() {
   console.log('Added new node:', newNode.id, 'with code length:', defaultCode.length)
 }
 
-/**
- * Placeholder for running the full pipeline from this view.
- * Currently not wired to the backend.
- */
+const createRequest = async () => {
+  const obj = toObject()
+  const transformations: string[] = []
+
+  const inputNode = obj.nodes.find((n) => n.type == 'custom-input')
+  const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
+
+  if (!inputNode || !outputNode) {
+    alert('input or output node missing')
+    return
+  }
+
+  let node = inputNode
+
+  while (true) {
+    const connectedNode = getOutgoers(node)[0]
+
+    if (connectedNode && connectedNode.id !== outputNode?.id) {
+      transformations.push(connectedNode.data.code)
+      node = connectedNode
+    } else {
+      // check if the last node is the output node ie if the graph is connected
+      if (!connectedNode || connectedNode.id !== outputNode?.id) {
+        alert('graph not connected')
+        return
+      }
+      break
+    }
+  }
+
+  // -------------------------
+  // Ask user whether to allow producer
+  // -------------------------
+  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
+
+  // ----------------------------------------
+  // Build JSON payload (exactly like your cURL)
+  // ----------------------------------------
+  const payload = {
+    input_topic: inputNode.data?.content,
+    output_topic: outputNode.data?.content,
+    transformations,
+    allow_producer,
+    n_channels: 10,
+    frequency: 1,
+  }
+
+  console.log('Sending payload:', payload)
+
+  // ----------------------------------------
+  // POST to FastAPI /start
+  // ----------------------------------------
+  try {
+    const res = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const msg = await res.text()
+      alert('Backend error: ' + msg)
+      return
+    }
+
+    const result = await res.json()
+    console.log('Backend response:', result)
+    alert('Pipeline started successfully!')
+  } catch (err) {
+    console.error(err)
+    alert('Failed to contact backend.')
+  }
+}
+
 const onRun = () => {
-  // const graphObject = toObject()
-  // const inputNode = graphObject.nodes.find((n) => n.type === 'custom-input')
-  // const outputNode = graphObject.nodes.find((n) => n.type === 'custom-output')
-  // const arrayTransformNodes = []
-  // getConnectedEdges(inputNode?.id).forEach((e) => {})
+  createRequest()
 }
 
 /**
@@ -378,10 +445,6 @@ const uploadJson = (event: Event) => {
       <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
-      </ControlButton>
-
-      <ControlButton title="Log `toObject`" @click="logToObject">
-        <CustomIcon name="log" />
       </ControlButton>
     </Controls>
   </VueFlow>

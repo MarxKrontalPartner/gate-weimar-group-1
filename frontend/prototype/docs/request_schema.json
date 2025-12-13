@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": [
+    {
+      "type": "object",
+      "properties": {
+        "input_topic": {
+          "type": "string"
+        },
+        "output_topic": {
+          "type": "string"
+        },
+        "transformations": {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "input_topic",
+        "output_topic",
+        "transformations"
+      ]
+    }
+  ]
+}

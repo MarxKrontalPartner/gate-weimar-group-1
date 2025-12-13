@@ -8,8 +8,9 @@ import router from './router'
 
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
-import '@vue-flow/core/dist/style.css'
-import '@vue-flow/core/dist/theme-default.css'
+// Import UIKit JS + Icons
+import UIkit from 'uikit'
+import Icons from 'uikit/dist/js/uikit-icons'
 
 declare global {
   interface Window {
@@ -24,6 +25,9 @@ self.MonacoEnvironment = {
     return new editorWorker()
   },
 }
+
+UIkit.use(Icons)
+
 const app = createApp(App)
 
 app.use(createPinia())

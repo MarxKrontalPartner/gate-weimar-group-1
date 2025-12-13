@@ -11,13 +11,11 @@ export const initialNodes: Node[] = [
     id: '2',
     type: 'custom-transform',
     data: {
-      content: 'Transform 1',
-      code: `def transform1(row: dict) -> dict:
-    logger.info(f"before :: row :: {row}")
+      content: 'Sum Transform',
+      code: `def sum_transform(row: dict) -> dict:
     for key in row:
         if key.startswith("channel_"):
             row[key] += 10
-    logger.info(f"after :: row :: {row}")
     return row
   `,
     },
@@ -27,13 +25,11 @@ export const initialNodes: Node[] = [
     id: '3',
     type: 'custom-transform',
     data: {
-      content: 'Transform 2',
-      code: `def transform2(row: dict) -> dict:
-    logger.info(f"before :: row :: {row}")
+      content: 'Mul Transform',
+      code: `def mul_transform(row: dict) -> dict:
     for key in row:
         if key.startswith("channel_"):
-            row[key] += 10
-    logger.info(f"after :: row :: {row}")
+            row[key] *= 2
     return row
   `,
     },

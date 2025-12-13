@@ -1,0 +1,23 @@
+[
+    {
+    "input_topic": "input_topic",
+    "output_topic": "output_topic",
+    "transformations": [
+    ]
+  },
+  {
+    "input_topic": "input_topic",
+    "output_topic": "output_topic",
+    "transformations": [
+      "def sum_transform(row: dict) -> dict:\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] += 10\\n    return row\\n  "
+    ]
+  },
+  {
+    "input_topic": "input_topic2",
+    "output_topic": "output_topic2",
+    "transformations": [
+      "def sum_transform(row: dict) -> dict:\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] += 10\\n    return row\\n  ",
+      "def mul_transform(row: dict) -> dict:\\n    for key in row:\\n        if key.startswith(\\"channel_\\"):\\n            row[key] *= 2\\n    return row\\n  "
+    ]
+  }
+]
