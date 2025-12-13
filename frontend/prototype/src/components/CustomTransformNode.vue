@@ -37,7 +37,7 @@ watch(
     if (!showModal.value) {
       code.value = newVal ?? ''
     }
-  }
+  },
 )
 
 const onCodeButtonClick = (event: MouseEvent) => {
@@ -95,9 +95,7 @@ const editorOptions = {
     <!-- Node Content -->
     <div class="transform-node-content">
       <p class="transform-title">{{ props.data.content }}</p>
-      <button @click="onCodeButtonClick" class="code-button" type="button">
-        CODE
-      </button>
+      <button @click="onCodeButtonClick" class="code-button" type="button">CODE</button>
     </div>
 
     <!-- Output Handle -->
@@ -105,17 +103,11 @@ const editorOptions = {
 
     <!-- Modal (only shown outside TestArea) -->
     <Teleport to="body">
-      <div
-        v-if="showModal && !isInTestArea"
-        class="modal-overlay"
-        @click.self="onCloseModal"
-      >
+      <div v-if="showModal && !isInTestArea" class="modal-overlay" @click.self="onCloseModal">
         <div class="modal-dialog">
           <div class="modal-header">
             <h2>{{ props.data.content }}</h2>
-            <button class="modal-close-btn" @click="onCloseModal">
-              &times;
-            </button>
+            <button class="modal-close-btn" @click="onCloseModal">&times;</button>
           </div>
 
           <div class="modal-body">
