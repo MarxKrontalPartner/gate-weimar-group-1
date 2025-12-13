@@ -1296,15 +1296,50 @@ _captured_stderr = _stderr_buffer.getvalue()
       if (!pyodideInstance) return
 
       const globalsToDelete = [
-        '__js_input', '_result', '_input_data', '_function_found',
-        '_tried_functions', '_user_functions', '_functions_before', '_functions_after',
-        'transform', 'transform1', 'transform2', 'transform3', 'transform4',
-        'transform5', 'transform6', 'transform7', 'transform8', 'transform9',
-        'transform10', 'main', 'run', 'process', 'execute', 'handle', 'compute',
-        'row', 'output', 'result', 'data', 'input_data', 'logger', 'Logger',
-        '_stdout_buffer', '_stderr_buffer', '_original_stdout', '_original_stderr',
-        '_captured_stdout', '_captured_stderr', '_convert_js_to_python',
-        '_protected_names', '_names_to_delete', '_priority_names', '_fname', '_func'
+        '__js_input',
+        '_result',
+        '_input_data',
+        '_function_found',
+        '_tried_functions',
+        '_user_functions',
+        '_functions_before',
+        '_functions_after',
+        'transform',
+        'transform1',
+        'transform2',
+        'transform3',
+        'transform4',
+        'transform5',
+        'transform6',
+        'transform7',
+        'transform8',
+        'transform9',
+        'transform10',
+        'main',
+        'run',
+        'process',
+        'execute',
+        'handle',
+        'compute',
+        'row',
+        'output',
+        'result',
+        'data',
+        'input_data',
+        'logger',
+        'Logger',
+        '_stdout_buffer',
+        '_stderr_buffer',
+        '_original_stdout',
+        '_original_stderr',
+        '_captured_stdout',
+        '_captured_stderr',
+        '_convert_js_to_python',
+        '_protected_names',
+        '_names_to_delete',
+        '_priority_names',
+        '_fname',
+        '_func',
       ]
 
       for (const name of globalsToDelete) {
@@ -1453,7 +1488,12 @@ _captured_stderr = _stderr_buffer.getvalue()
         }
 
         // Ensure we show something if nothing else was output
-        if (!consoleOutput.value && !otherOutput.value && !tableOutput.value && !errorOutput.value) {
+        if (
+          !consoleOutput.value &&
+          !otherOutput.value &&
+          !tableOutput.value &&
+          !errorOutput.value
+        ) {
           consoleOutput.value = '(Code executed successfully with no output)'
         }
 

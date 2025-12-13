@@ -38,7 +38,7 @@ watch(
       code.value = newVal ?? ''
       console.log('Code updated from props:', props.id, 'length:', code.value.length)
     }
-  }
+  },
 )
 
 const onCodeButtonClick = (event: MouseEvent) => {
@@ -99,9 +99,7 @@ const editorOptions = {
     <div class="transform-node-content">
       <p class="transform-title">{{ props.data.content }}</p>
 
-      <button @click="onCodeButtonClick" class="code-button" type="button">
-        CODE
-      </button>
+      <button @click="onCodeButtonClick" class="code-button" type="button">CODE</button>
     </div>
 
     <Handle type="source" :position="Position.Right" :connectable="1" />
