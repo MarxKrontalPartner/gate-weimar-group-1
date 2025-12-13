@@ -15,13 +15,11 @@ const props = defineProps<{
 const { updateNodeData, findNode } = useVueFlow()
 const route = useRoute()
 
-// Check if we're in TestArea
+// Detect if we are in the TestArea route
 const isInTestArea = computed(() => route.name === 'test-area')
 
+// Modal visibility
 const showModal = ref(false)
-const props = defineProps(['id', 'data', 'isDark'])
-
-//props specifically for light/dark mode
 
 // Local editable copy of the code
 const code = ref<string>('')
@@ -29,30 +27,28 @@ const code = ref<string>('')
 // Initialize code on mount
 onMounted(() => {
   code.value = props.data.code ?? ''
-  console.log('CustomTransformNode mounted:', props.id, 'code length:', code.value.length)
 })
 
-// Watch for external changes to props.data.code (e.g., from TestArea sync)
+// Watch for external changes to props.data.code (e.g., sync from TestArea)
 watch(
   () => props.data.code,
   (newVal) => {
-    // Only update if modal is closed to avoid overwriting user edits
+    // Only update local copy if modal is closed (prevents overwriting user edits)
     if (!showModal.value) {
       code.value = newVal ?? ''
-      console.log('Code updated from props:', props.id, 'length:', code.value.length)
     }
-  },
+  }
 )
 
 const onCodeButtonClick = (event: MouseEvent) => {
   if (isInTestArea.value) {
-    // In TestArea, let the click bubble up to the node click handler
+    // Let click bubble up in TestArea (parent handles node selection/execution)
     return
   }
 
   event.stopPropagation()
 
-  // Get the latest code from the node
+  // Ensure we have the absolute latest code from Vue Flow store
   const node = findNode(props.id)
   if (node?.data && typeof node.data === 'object') {
     const nodeData = node.data as { code?: string }
@@ -61,7 +57,6 @@ const onCodeButtonClick = (event: MouseEvent) => {
     code.value = props.data.code ?? ''
   }
 
-  console.log('Opening modal for:', props.id, 'code length:', code.value.length)
   showModal.value = true
 }
 
@@ -70,13 +65,10 @@ const onCloseModal = () => {
 }
 
 const onSave = () => {
-  // Update Vue Flow's node data
   updateNodeData(props.id, {
     content: props.data.content,
     code: code.value,
   })
-
-  console.log('Saved code for node:', props.id, 'length:', code.value.length)
   showModal.value = false
 }
 
@@ -97,23 +89,33 @@ const editorOptions = {
 
 <template>
   <div class="transform-node-container">
+    <!-- Input Handle -->
     <Handle type="target" :position="Position.Left" :connectable="1" />
 
+    <!-- Node Content -->
     <div class="transform-node-content">
       <p class="transform-title">{{ props.data.content }}</p>
-
-      <button @click="onCodeButtonClick" class="code-button" type="button">CODE</button>
+      <button @click="onCodeButtonClick" class="code-button" type="button">
+        CODE
+      </button>
     </div>
 
+    <!-- Output Handle -->
     <Handle type="source" :position="Position.Right" :connectable="1" />
 
-    <!-- Modal - Only renders in HomeView -->
+    <!-- Modal (only shown outside TestArea) -->
     <Teleport to="body">
-      <div v-if="showModal && !isInTestArea" class="modal-overlay" @click.self="onCloseModal">
+      <div
+        v-if="showModal && !isInTestArea"
+        class="modal-overlay"
+        @click.self="onCloseModal"
+      >
         <div class="modal-dialog">
           <div class="modal-header">
             <h2>{{ props.data.content }}</h2>
-            <button class="modal-close-btn" @click="onCloseModal">&times;</button>
+            <button class="modal-close-btn" @click="onCloseModal">
+              &times;
+            </button>
           </div>
 
           <div class="modal-body">
@@ -136,49 +138,7 @@ const editorOptions = {
         </div>
       </div>
     </Teleport>
-    <input
-      type="text"
-      v-model="reactiveData.content"
-      class="nodrag uk-input input-nodes"
-      name="transformation-name"
-    />
-
-    <!-- This is a button toggling the modal -->
-    <button
-      @click="onModalToggle"
-      class="uk-button uk-button-primary uk-button-small"
-      uk-toggle="target: #modal-example"
-      style="border-radius: 3px; width: auto"
-    >
-      Edit Code
-    </button>
-
-    <!-- This is the modal -->
-    <div id="modal-example" uk-modal="esc-close: false; bg-close: false" v-if="showModal">
-      <div class="uk-modal-dialog uk-modal-body">
-        <h2 class="uk-modal-title">{{ reactiveData.content }}</h2>
-        <div class="code-editor-container">
-          <CodeEditor
-            v-model:value="reactiveData.code"
-            language="python"
-            :theme="isDark ? 'vs-dark' : 'vs-light'"
-            :options="editorOptions"
-          />
-        </div>
-        <p class="uk-text-right">
-          <button
-            @click="onSave"
-            class="uk-button uk-modal-close uk-save-button uk-button-small"
-            type="button"
-          >
-            Save
-          </button>
-        </p>
-      </div>
-    </div>
   </div>
-
-  <Handle type="source" :position="Position.Right" :connectable="1" />
 </template>
 
 <style scoped>
