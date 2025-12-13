@@ -19,6 +19,9 @@ const route = useRoute()
 const isInTestArea = computed(() => route.name === 'test-area')
 
 const showModal = ref(false)
+const props = defineProps(['id', 'data', 'isDark'])
+
+//props specifically for light/dark mode
 
 // Local editable copy of the code
 const code = ref<string>('')
@@ -133,7 +136,49 @@ const editorOptions = {
         </div>
       </div>
     </Teleport>
+    <input
+      type="text"
+      v-model="reactiveData.content"
+      class="nodrag uk-input input-nodes"
+      name="transformation-name"
+    />
+
+    <!-- This is a button toggling the modal -->
+    <button
+      @click="onModalToggle"
+      class="uk-button uk-button-primary uk-button-small"
+      uk-toggle="target: #modal-example"
+      style="border-radius: 3px; width: auto"
+    >
+      Edit Code
+    </button>
+
+    <!-- This is the modal -->
+    <div id="modal-example" uk-modal="esc-close: false; bg-close: false" v-if="showModal">
+      <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">{{ reactiveData.content }}</h2>
+        <div class="code-editor-container">
+          <CodeEditor
+            v-model:value="reactiveData.code"
+            language="python"
+            :theme="isDark ? 'vs-dark' : 'vs-light'"
+            :options="editorOptions"
+          />
+        </div>
+        <p class="uk-text-right">
+          <button
+            @click="onSave"
+            class="uk-button uk-modal-close uk-save-button uk-button-small"
+            type="button"
+          >
+            Save
+          </button>
+        </p>
+      </div>
+    </div>
   </div>
+
+  <Handle type="source" :position="Position.Right" :connectable="1" />
 </template>
 
 <style scoped>
