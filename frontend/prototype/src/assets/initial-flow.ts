@@ -5,7 +5,7 @@ export const initialNodes: Node[] = [
     id: '1',
     type: 'custom-input',
     data: { content: 'Input Topic' },
-    position: { x: 20, y: 500 },
+    position: { x: 0, y: 500 },
   },
   {
     id: '2',
@@ -23,6 +23,12 @@ export const initialNodes: Node[] = [
   },
   {
     id: '3',
+    type: 'custom-intermediate',
+    data: { content: 'Intermediate Topic' },
+    position: { x: 600, y: 500 },
+  },
+  {
+    id: '4',
     type: 'custom-transform',
     data: {
       content: 'Mul Transform',
@@ -33,13 +39,13 @@ export const initialNodes: Node[] = [
     return row
   `,
     },
-    position: { x: 500, y: 500 },
+    position: { x: 900, y: 500 },
   },
   {
-    id: '4',
+    id: '5',
     type: 'custom-output',
     data: { content: 'Output Topic' },
-    position: { x: 700, y: 500 },
+    position: { x: 1200, y: 500 },
   },
 ]
 
@@ -58,5 +64,10 @@ export const initialEdges: Edge[] = [
     id: 'e3-4',
     source: '3',
     target: '4',
+  },
+  {
+    id: 'e4-5',
+    source: '4',
+    target: '5',
   },
 ]
