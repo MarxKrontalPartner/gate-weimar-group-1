@@ -16,10 +16,7 @@ const router = createRouter({
       name: 'singletransform',
       component: SingleTransform,
     },
-    { path: '/test-area',
-      name: 'test-area',
-      component: TestArea,
-    },
+    { path: '/test-area', name: 'test-area', component: TestArea },
   ],
 })
 

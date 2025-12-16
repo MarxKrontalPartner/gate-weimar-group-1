@@ -43,7 +43,7 @@ watch(
 // Sync localCode back to reactiveData when localCode changes
 const handleEditorChange = (newValue: string) => {
   localCode.value = newValue
-  reactiveData.code = newValue  // Keep reactiveData in sync
+  reactiveData.code = newValue // Keep reactiveData in sync
 }
 
 // Explicit close function
@@ -79,7 +79,7 @@ const onSave = () => {
   // ===== END ADDITION =====
 
   updateNodeData(props.id, {
-    code: reactiveData.code,  // UNCHANGED - still uses reactiveData.code
+    code: reactiveData.code, // UNCHANGED - still uses reactiveData.code
   })
   onModalToggle()
 }
@@ -119,7 +119,7 @@ const editorOptions = {
         uk-modal="esc-close: false; bg-close: false"
         v-if="showModal && !isInTestArea"
         class="uk-modal uk-open"
-        style="display: block; background: rgba(0,0,0,0.6);"
+        style="display: block; background: rgba(0, 0, 0, 0.6)"
       >
         <div class="uk-modal-dialog uk-modal-body">
           <h2 class="uk-modal-title">{{ reactiveData.content }}</h2>
@@ -139,7 +139,7 @@ const editorOptions = {
               @click="onCloseModal"
               class="uk-button uk-button-default uk-button-small"
               type="button"
-              style="margin-right: 10px;"
+              style="margin-right: 10px"
             >
               Cancel
             </button>

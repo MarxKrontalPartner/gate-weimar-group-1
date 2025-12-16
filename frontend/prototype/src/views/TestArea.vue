@@ -133,7 +133,7 @@
           <div v-if="chartOutput" class="chart-output-section">
             <h3>{{ chartTitle }}</h3>
             <div class="chart-wrapper">
-              <canvas ref="chartCanvas" width="400" height="280" style="display: block;"></canvas>
+              <canvas ref="chartCanvas" width="400" height="280" style="display: block"></canvas>
             </div>
           </div>
 
@@ -209,11 +209,17 @@
 
     <!-- Custom Modal: Save Confirmation -->
     <Teleport to="body">
-      <div v-if="showSaveConfirm" class="testarea-modal-overlay" @click.self="closeSaveConfirmModal">
+      <div
+        v-if="showSaveConfirm"
+        class="testarea-modal-overlay"
+        @click.self="closeSaveConfirmModal"
+      >
         <div class="testarea-modal-dialog">
           <div class="testarea-modal-header">
             <h3>Save changes to HomeView?</h3>
-            <button class="testarea-modal-close-button" @click="closeSaveConfirmModal">&times;</button>
+            <button class="testarea-modal-close-button" @click="closeSaveConfirmModal">
+              &times;
+            </button>
           </div>
           <div class="testarea-modal-body">
             <p>
@@ -235,11 +241,17 @@
 
     <!-- Custom Modal: Reset Input Confirmation -->
     <Teleport to="body">
-      <div v-if="showResetInputConfirm" class="testarea-modal-overlay" @click.self="closeResetInputModal">
+      <div
+        v-if="showResetInputConfirm"
+        class="testarea-modal-overlay"
+        @click.self="closeResetInputModal"
+      >
         <div class="testarea-modal-dialog">
           <div class="testarea-modal-header">
             <h3>Change Input Data?</h3>
-            <button class="testarea-modal-close-button" @click="closeResetInputModal">&times;</button>
+            <button class="testarea-modal-close-button" @click="closeResetInputModal">
+              &times;
+            </button>
           </div>
           <div class="testarea-modal-body">
             <p>
@@ -248,7 +260,9 @@
             </p>
           </div>
           <div class="testarea-modal-footer">
-            <button class="testarea-btn-secondary" @click="handleKeepInput">No, keep current input</button>
+            <button class="testarea-btn-secondary" @click="handleKeepInput">
+              No, keep current input
+            </button>
             <button class="testarea-btn-primary" @click="handleClearInput">Yes, clear input</button>
           </div>
         </div>
@@ -296,11 +310,7 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
 
 // Chart.js imports - Run: npm install chart.js
 // Using chart.js/auto which auto-registers all components
-import {
-  Chart as ChartJS,
-  type ChartConfiguration,
-  type ChartType,
-} from 'chart.js/auto'
+import { Chart as ChartJS, type ChartConfiguration, type ChartType } from 'chart.js/auto'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -1183,7 +1193,7 @@ _captured_stderr = _stderr_buffer.getvalue()
       console.log('After first nextTick')
 
       // Small additional delay to ensure canvas is mounted
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       console.log('After delay, checking canvas...')
 
       if (!chartCanvas.value) {
@@ -1258,12 +1268,20 @@ _captured_stderr = _stderr_buffer.getvalue()
             maintainAspectRatio: false,
             scales: {
               x: {
-                title: { display: true, text: (chartData.x_label as string) || 'X', color: '#94a3b8' },
+                title: {
+                  display: true,
+                  text: (chartData.x_label as string) || 'X',
+                  color: '#94a3b8',
+                },
                 grid: { color: 'rgba(148, 163, 184, 0.2)' },
                 ticks: { color: '#94a3b8' },
               },
               y: {
-                title: { display: true, text: (chartData.y_label as string) || 'Y', color: '#94a3b8' },
+                title: {
+                  display: true,
+                  text: (chartData.y_label as string) || 'Y',
+                  color: '#94a3b8',
+                },
                 grid: { color: 'rgba(148, 163, 184, 0.2)' },
                 ticks: { color: '#94a3b8' },
               },
@@ -1277,7 +1295,8 @@ _captured_stderr = _stderr_buffer.getvalue()
         // Line, bar, area charts
         const firstDataPoint = data[0] ?? {}
         const xAxis: string = (chartData.x_axis as string) || Object.keys(firstDataPoint)[0] || 'x'
-        const series: string[] = (chartData.series as string[]) || Object.keys(firstDataPoint).filter((k) => k !== xAxis)
+        const series: string[] =
+          (chartData.series as string[]) || Object.keys(firstDataPoint).filter((k) => k !== xAxis)
         const labels = data.map((d) => String(d[xAxis] ?? ''))
         const colors = generateColors(series.length)
 
@@ -1337,16 +1356,16 @@ _captured_stderr = _stderr_buffer.getvalue()
      */
     const generateColors = (count: number): string[] => {
       const baseColors: readonly string[] = [
-        'rgba(59, 130, 246, 0.7)',   // Blue
-        'rgba(34, 197, 94, 0.7)',    // Green
-        'rgba(249, 115, 22, 0.7)',   // Orange
-        'rgba(168, 85, 247, 0.7)',   // Purple
-        'rgba(236, 72, 153, 0.7)',   // Pink
-        'rgba(20, 184, 166, 0.7)',   // Teal
-        'rgba(245, 158, 11, 0.7)',   // Amber
-        'rgba(239, 68, 68, 0.7)',    // Red
-        'rgba(99, 102, 241, 0.7)',   // Indigo
-        'rgba(16, 185, 129, 0.7)',   // Emerald
+        'rgba(59, 130, 246, 0.7)', // Blue
+        'rgba(34, 197, 94, 0.7)', // Green
+        'rgba(249, 115, 22, 0.7)', // Orange
+        'rgba(168, 85, 247, 0.7)', // Purple
+        'rgba(236, 72, 153, 0.7)', // Pink
+        'rgba(20, 184, 166, 0.7)', // Teal
+        'rgba(245, 158, 11, 0.7)', // Amber
+        'rgba(239, 68, 68, 0.7)', // Red
+        'rgba(99, 102, 241, 0.7)', // Indigo
+        'rgba(16, 185, 129, 0.7)', // Emerald
       ] as const
       const colors: string[] = []
       for (let i = 0; i < count; i++) {
@@ -1414,9 +1433,10 @@ _captured_stderr = _stderr_buffer.getvalue()
 
       if (explicitType === 'json') {
         // User explicitly requested JSON output
-        const dataToShow = typeof result === 'object' && result !== null && !Array.isArray(result)
-          ? extractResultData(result as Record<string, unknown>)
-          : result
+        const dataToShow =
+          typeof result === 'object' && result !== null && !Array.isArray(result)
+            ? extractResultData(result as Record<string, unknown>)
+            : result
         try {
           otherOutput.value = JSON.stringify(dataToShow, null, 2)
         } catch {
