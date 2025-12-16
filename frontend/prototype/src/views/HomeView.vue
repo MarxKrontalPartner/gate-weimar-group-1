@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -20,12 +21,91 @@ import UIkit from 'uikit'
 const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
   useVueFlow()
 
-const nodes = ref(initialNodes)
+// ===== ADDITION: Router for TestArea navigation =====
+const router = useRouter()
 
-const edges = ref(initialEdges)
+// ===== ADDITION: Typed refs for proper synchronization =====
+const nodes = ref<Node[]>(initialNodes)
+const edges = ref<Edge[]>(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
+
+/**
+ * Counter for naming new transform nodes as "Transform N".
+ * We will initialise it from existing nodes on mount so it
+ * always continues from the highest index in the current graph.
+ */
+let transformationNodeNumber = 2
+
+// ===== ADDITION: Function to refresh transform counter =====
+/**
+ * Scan existing nodes, find the highest "Transform N",
+ * and update `transformationNodeNumber` so new nodes
+ * continue from that index.
+ */
+function refreshTransformCounter() {
+  let maxIndex = transformationNodeNumber
+
+  for (const n of nodes.value) {
+    if (n.type === 'custom-transform') {
+      // `data` is some object that may contain a `content` string
+      const content = (n.data as { content?: string } | undefined)?.content
+      if (!content) continue
+
+      const match = content.match(/Transform\s+(\d+)/i)
+      if (match) {
+        const num = Number(match[1])
+        if (!Number.isNaN(num) && num > maxIndex) {
+          maxIndex = num
+        }
+      }
+    }
+  }
+
+  transformationNodeNumber = maxIndex
+}
+
+// ===== ADDITION: onMounted hook to load from TestArea =====
+/**
+ * On mount:
+ * - If there is a graph coming back from TestArea, load it.
+ * - In all cases, refresh the transform counter so "Add a node"
+ *   uses the next available index.
+ */
+onMounted(() => {
+  const savedGraph = sessionStorage.getItem('testarea_graph')
+
+  if (savedGraph) {
+    try {
+      const graph = JSON.parse(savedGraph)
+
+      // Validate that nodes have required data
+      const hasValidNodes = graph.nodes?.every((n: Node) => {
+        if (n.type === 'custom-transform') {
+          return n.data && typeof (n.data as { code?: string }).code === 'string'
+        }
+        return true
+      })
+
+      if (hasValidNodes) {
+        fromObject(graph)
+        nodes.value = graph.nodes as Node[]
+        edges.value = graph.edges as Edge[]
+        console.log('Loaded graph from TestArea:', graph)
+      } else {
+        console.warn('Invalid graph data in sessionStorage, using initial nodes')
+        sessionStorage.removeItem('testarea_graph')
+        // Keep using initialNodes (already set as default)
+      }
+    } catch (e) {
+      console.error('Failed to load graph from TestArea:', e)
+      sessionStorage.removeItem('testarea_graph')
+    }
+  }
+
+  refreshTransformCounter()
+})
 
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
@@ -46,6 +126,29 @@ onInit((vueFlowInstance) => {
 onConnect((connection) => {
   addEdges(connection)
 })
+
+// ===== ADDITION: Navigate to TestArea =====
+/**
+ * Navigate to the TestArea view:
+ * 1. serialise the current graph with `toObject`
+ * 2. store it in sessionStorage
+ * 3. push the /test-area route
+ *
+ * IMPORTANT: Route name 'test-area' must match:
+ * - router/index.ts route definition
+ * - CustomTransformNode.vue isInTestArea check
+ * - TestArea.vue ROUTE_NAMES.TEST_AREA
+ */
+function goToTestArea() {
+  const graph = toObject()
+  console.log('Sending graph to TestArea:', graph)
+
+  sessionStorage.setItem('testarea_graph', JSON.stringify(graph))
+
+  router.push({
+    name: 'test-area',
+  })
+}
 
 /**
  * To update a node or multiple nodes, you can
@@ -113,28 +216,42 @@ function delConfirm({ node }: { node: Node }) {
   UIkit.modal('#del-confirm').show()
 }
 
-let transformationNodeNumber = 2
-
+// ===== MODIFIED: addNode with refreshTransformCounter and proper array handling =====
+/**
+ * Add a new transform node. The node is named "Transform N"
+ * where N continues from the highest existing index (including
+ * any nodes loaded back from TestArea).
+ */
 function addNode() {
+  // Refresh counter to ensure we use the next available number
+  refreshTransformCounter()
+
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
-  nodes.value.push({
-    id,
-    position: { x: 400, y: 500 },
-    type: 'custom-transform',
-    data: {
-      content: `Transform ${transformationNodeNumber}`,
-      code: `def transform${transformationNodeNumber}(row: dict) -> dict:
+  const defaultCode = `def transform${transformationNodeNumber}(row: dict) -> dict:
     logger.info(f"before :: row :: {row}")
     for key in row:
         if key.startswith("channel_"):
             row[key] += 10
     logger.info(f"after :: row :: {row}")
     return row
-  `,
+`
+
+  const newNode: Node = {
+    id,
+    position: { x: 400, y: 300 + Math.random() * 200 },
+    type: 'custom-transform',
+    data: {
+      content: `Transform ${transformationNodeNumber}`,
+      code: defaultCode,
     },
-  })
+  }
+
+  // Use spread to create new array (better reactivity)
+  nodes.value = [...nodes.value, newNode]
+
+  console.log('Added new node:', newNode.id, 'with code length:', defaultCode.length)
 }
 
 const createRequest = async () => {
@@ -264,6 +381,16 @@ const uploadJson = (event: Event) => {
         if (flow) {
           fromObject(flow)
 
+          // ===== ADDITION: Sync nodes/edges refs after import =====
+          if (flow.nodes) {
+            nodes.value = flow.nodes as Node[]
+          }
+          if (flow.edges) {
+            edges.value = flow.edges as Edge[]
+          }
+          // Refresh counter after import
+          refreshTransformCounter()
+
           const element = getFileElement()
           if (element) {
             element.value = ''
@@ -285,8 +412,8 @@ const uploadJson = (event: Event) => {
 
 <template>
   <VueFlow
-    v-model="nodes"
-    :edges="edges"
+    v-model:nodes="nodes"
+    v-model:edges="edges"
     :class="{ dark }"
     class="basic-flow"
     :default-viewport="{ zoom: 1 }"
@@ -311,6 +438,14 @@ const uploadJson = (event: Event) => {
         <input id="fileUpload" type="file" accept="application/json" @change="uploadJson" hidden />
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
+        </button>
+        <!-- ===== ADDITION: TestArea button ===== -->
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="goToTestArea"
+        >
+          TestArea
         </button>
       </div>
     </Panel>
