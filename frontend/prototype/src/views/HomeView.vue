@@ -27,6 +27,9 @@ const edges = ref(initialEdges)
 // our dark mode toggle flag
 const dark = ref(true)
 
+const inputMessages = ref<any[]>([])
+const outputMessages = ref<any[]>([])
+
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
  * Any event that is available as `@event-name` on the VueFlow component is also available as `onEventName` on the composable and vice versa
@@ -281,10 +284,48 @@ const uploadJson = (event: Event) => {
     reader.readAsText(file)
   }
 }
+
+let ws: WebSocket | null = null
+
+const connectWebSocket = () => {
+  ws = new WebSocket('ws://localhost:8000/ws/stream')
+
+  ws.onopen = () => {
+    console.log('WebSocket connected')
+  }
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data)
+
+    if (msg.type === 'input') {
+      inputMessages.value.push(msg)
+    }
+
+    if (msg.type === 'output') {
+      outputMessages.value.push(msg)
+    }
+  }
+
+  ws.onerror = (err) => {
+    console.error('WebSocket error', err)
+  }
+
+  ws.onclose = () => {
+    console.warn('WebSocket closed')
+  }
+}
+
+connectWebSocket()
+
+
+
 </script>
 
+
 <template>
+
   <VueFlow
+  
     v-model="nodes"
     :edges="edges"
     :class="{ dark }"
@@ -314,6 +355,8 @@ const uploadJson = (event: Event) => {
         </button>
       </div>
     </Panel>
+    
+
 
     <template #node-custom-input="props">
       <CustomInputNode :id="props.id" :data="props.data" />
@@ -326,6 +369,7 @@ const uploadJson = (event: Event) => {
     <template #node-custom-transform="props">
       <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
     </template>
+    
 
     <Background pattern-color="#aaa" :gap="16" />
 
@@ -337,6 +381,91 @@ const uploadJson = (event: Event) => {
       </ControlButton>
     </Controls>
   </VueFlow>
+<div
+  style="
+    position: fixed !important;
+    right: 10px !important;
+    top: 10px !important;
+    width: 650px !important;
+    height: 420px !important;
+    display: flex !important;
+    gap: 10px !important;
+    background: #ffffff !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+    font-family: monospace !important;
+    z-index: 100000 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  "
+>
+  <!-- INPUT PANEL -->
+  <div
+    style="
+      flex: 1 !important;
+      overflow-y: auto !important;
+      border-right: 1px solid #ddd !important;
+      padding-right: 8px !important;
+    "
+  >
+    <h4 style="margin: 0 0 8px 0 !important; color: #2e7d32 !important;">
+      Input
+    </h4>
+
+    <pre
+      v-for="(msg, i) in inputMessages.slice(-20)"
+      :key="'in-' + i"
+      style="
+        background: #f6f8fa !important;
+        padding: 6px !important;
+        border-radius: 4px !important;
+        font-size: 12px !important;
+        margin-bottom: 6px !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+      "
+    >
+{{ JSON.stringify(msg, null, 2) }}
+    </pre>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div
+    style="
+      flex: 1 !important;
+      overflow-y: auto !important;
+      padding-left: 8px !important;
+    "
+  >
+    <h4 style="margin: 0 0 8px 0 !important; color: #1565c0 !important;">
+      Output
+    </h4>
+
+    <pre
+      v-for="(msg, i) in outputMessages.slice(-20)"
+      :key="'out-' + i"
+      style="
+        background: #f6f8fa !important;
+        padding: 6px !important;
+        border-radius: 4px !important;
+        font-size: 12px !important;
+        margin-bottom: 6px !important;
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+      "
+    >
+{{ JSON.stringify(msg, null, 2) }}
+    </pre>
+  </div>
+</div>
+
+
+
+
+
+
+  
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">Delete Node Confirmation</h2>
