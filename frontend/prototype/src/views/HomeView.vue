@@ -4,12 +4,14 @@ import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import { initialEdges, initialNodes } from '../assets/initial-flow.ts'
+import { initialEdges, initialNodes } from '@/assets/initial-flow.ts'
 import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
 import UIkit from 'uikit'
+import CustomIntermediateNode from '@/components/CustomIntermediateNode.vue'
+import { type Payload } from '@/assets/payload.ts'
 
 /**
  * `useVueFlow` provides:
@@ -137,9 +139,21 @@ function addNode() {
   })
 }
 
+function addIntermediateNode() {
+  const id = Date.now().toString()
+
+  nodes.value.push({
+    id,
+    position: { x: 400, y: 500 },
+    type: 'custom-intermediate',
+    data: { content: 'Intermediate Topic' },
+  })
+}
+
 const createRequest = async () => {
   const obj = toObject()
-  const transformations: string[] = []
+  let transformations: string[] = []
+  const payload: Payload[] = []
 
   const inputNode = obj.nodes.find((n) => n.type == 'custom-input')
   const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
@@ -149,13 +163,34 @@ const createRequest = async () => {
     return
   }
 
+  const tempPayload: Payload = {
+    input_topic: inputNode.data.content,
+    output_topic: outputNode.data.content,
+    transformations: [],
+    allow_producer: false,
+    n_channels: 10,
+    frequency: 1,
+  }
+
   let node = inputNode
 
   while (true) {
     const connectedNode = getOutgoers(node)[0]
 
     if (connectedNode && connectedNode.id !== outputNode?.id) {
-      transformations.push(connectedNode.data.code)
+      if (connectedNode.type == 'custom-intermediate') {
+        //separate the requests
+        tempPayload.transformations = transformations
+        tempPayload.output_topic = connectedNode.data.content
+        payload.push({ ...tempPayload })
+
+        tempPayload.input_topic = connectedNode.data.content
+        tempPayload.output_topic = outputNode.data.content
+        transformations = []
+      } else {
+        transformations.push(connectedNode.data.code)
+      }
+
       node = connectedNode
     } else {
       // check if the last node is the output node ie if the graph is connected
@@ -163,6 +198,8 @@ const createRequest = async () => {
         alert('graph not connected')
         return
       }
+      tempPayload.transformations = transformations
+      payload.push({ ...tempPayload })
       break
     }
   }
@@ -172,17 +209,9 @@ const createRequest = async () => {
   // -------------------------
   const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
 
-  // ----------------------------------------
-  // Build JSON payload (exactly like your cURL)
-  // ----------------------------------------
-  const payload = {
-    input_topic: inputNode.data?.content,
-    output_topic: outputNode.data?.content,
-    transformations,
-    allow_producer,
-    n_channels: 10,
-    frequency: 1,
-  }
+  payload.forEach((p) => {
+    p.allow_producer = allow_producer
+  })
 
   console.log('Sending payload:', payload)
 
@@ -296,12 +325,22 @@ const uploadJson = (event: Event) => {
     @node-double-click="delConfirm"
     :connection-mode="ConnectionMode.Strict"
   >
-    <!-- <AppBar /> -->
     <Panel position="bottom-center">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
-          Add a node
+          Add transformation node
         </button>
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="addIntermediateNode"
+        >
+          Add intermediate node
+        </button>
+      </div></Panel
+    >
+    <Panel position="top-center">
+      <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onRun">
           Run
         </button>
@@ -325,6 +364,10 @@ const uploadJson = (event: Event) => {
 
     <template #node-custom-transform="props">
       <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
+    </template>
+
+    <template #node-custom-intermediate="props">
+      <CustomIntermediateNode :id="props.id" :data="props.data" />
     </template>
 
     <Background pattern-color="#aaa" :gap="16" />
