@@ -13,7 +13,6 @@ const props = defineProps(['id', 'data', 'isDark'])
 
 const reactiveData = reactive(props.data)
 
-
 const route = useRoute()
 
 const isInTestArea = computed(() => route.name === 'test-area')
@@ -21,11 +20,9 @@ const isInTestArea = computed(() => route.name === 'test-area')
 // Local editable copy of the code (prevents reactivity conflicts)
 const localCode = ref<string>('')
 
-
 onMounted(() => {
   localCode.value = reactiveData.code ?? ''
 })
-
 
 watch(
   () => props.data.code,
@@ -42,7 +39,6 @@ const handleEditorChange = (newValue: string) => {
   localCode.value = newValue
   reactiveData.code = newValue
 }
-
 
 const onCloseModal = () => {
   showModal.value = false
@@ -91,7 +87,6 @@ const editorOptions = {
       name="transformation-name"
     />
 
-
     <button
       @click="onModalToggle"
       class="uk-button uk-button-primary uk-button-small"
@@ -100,7 +95,6 @@ const editorOptions = {
     >
       Edit Code
     </button>
-
 
     <Teleport to="body">
       <div
@@ -113,7 +107,6 @@ const editorOptions = {
         <div class="uk-modal-dialog uk-modal-body">
           <h2 class="uk-modal-title">{{ reactiveData.content }}</h2>
           <div class="code-editor-container">
-
             <CodeEditor
               :value="localCode"
               @change="handleEditorChange"
@@ -123,7 +116,6 @@ const editorOptions = {
             />
           </div>
           <p class="uk-text-right">
-
             <button
               @click="onCloseModal"
               class="uk-button uk-button-default uk-button-small"

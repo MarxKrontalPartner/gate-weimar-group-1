@@ -29,9 +29,7 @@ const edges = ref(initialEdges)
 // our dark mode toggle flag
 const dark = ref(true)
 
-
 let transformationNodeNumber = 2
-
 
 function refreshTransformCounter() {
   let maxIndex = transformationNodeNumber
@@ -412,7 +410,11 @@ const uploadJson = (event: Event) => {
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
         </button>
-        <button class="uk-button uk-button-primary uk-button-small" type="button" @click="goToTestArea">
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="goToTestArea"
+        >
           TestArea
         </button>
       </div>

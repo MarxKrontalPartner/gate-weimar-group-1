@@ -293,7 +293,15 @@
 import { defineComponent, ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import MonacoEditor from 'monaco-editor-vue3'
-import {ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge, type NodeMouseEvent,} from '@vue-flow/core'
+import {
+  ConnectionMode,
+  VueFlow,
+  useVueFlow,
+  Panel,
+  type Node,
+  type Edge,
+  type NodeMouseEvent,
+} from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import CustomInputNode from '@/components/CustomInputNode.vue'
@@ -350,7 +358,6 @@ interface MonacoGlobal {
     Info: number
   }
 }
-
 
 interface TransformNodeData {
   content: string
@@ -1570,8 +1577,7 @@ _captured_stderr = _stderr_buffer.getvalue()
       for (const name of globalsToDelete) {
         try {
           pyodideInstance.globals.delete(name)
-        } catch {
-        }
+        } catch {}
       }
     }
 
