@@ -52,7 +52,7 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
         "TRANSFORMATIONS": json.dumps(pipeline.transformations)
     }
 
-    client.containers.run(
+    worker_container =client.containers.run(
         image=image_tag,
         command=["python", "worker.py"],
         detach=True,
@@ -60,7 +60,18 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
         environment=worker_env_vars,
         auto_remove=False
     )
-    
+    try:
+        time.sleep(120)
+        print(f"{worker_container.short_id} is running. Waiting 2 minutes")
+
+    finally:
+        print(f"Destroying container {worker_container.short_id}")
+        try:
+            worker_container.stop(timeout=10) # Give it 10s to shut down gracefully
+            worker_container.remove(force=True) # Force removal to be safe
+            print("Container destroyed.")
+        except Exception as e:
+            print(f"Error cleaning up container: {e}")
 
 
 def run_pipelines_sequentially(pipelines: list[PipelineInput]):
