@@ -7,7 +7,7 @@ from quixstreams import Application
 from quixstreams.models.messages import KafkaMessage
 
 
-from backend.worker.logger import get_logger
+from logger import get_logger
 import os
 
 
