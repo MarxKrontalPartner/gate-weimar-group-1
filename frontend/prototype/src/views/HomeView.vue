@@ -374,7 +374,7 @@ const uploadJson = (event: Event) => {
 
     <MiniMap node-color="#2b2b32" style="margin-bottom: 55px" />
     <Controls position="bottom-right" style="border: 1px; border-color: black; border-style: solid">
-      <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
+      <ControlButton @click="toggleDarkMode">
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
       </ControlButton>
