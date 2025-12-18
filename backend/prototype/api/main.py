@@ -52,13 +52,19 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
         "TRANSFORMATIONS": json.dumps(pipeline.transformations)
     }
 
+
+    timestamp = int(time.time())
+    container_name = f"consumer_{timestamp}_{timestamp}"
+    
+
     worker_container =client.containers.run(
         image=image_tag,
         command=["python", "worker.py"],
         detach=True,
         network=network_name,
         environment=worker_env_vars,
-        auto_remove=False
+        auto_remove=False,
+        name=container_name
     )
     try:
         time.sleep(120)

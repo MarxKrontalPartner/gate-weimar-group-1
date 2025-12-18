@@ -39,6 +39,8 @@ docker compose up -d
     "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
   ]
 }
+```
+
 - Sample Payload for Option B 
 ```Json
 [
@@ -69,8 +71,6 @@ docker compose up -d
 ]
 ```
 
-
-```
 - Sample Payload for Option C
 ```Json
 {
