@@ -1,50 +1,57 @@
+# Readme.md
+# Prerequisites
 
-# Gate Weimar
+Docker Desktop installed and running.
 
-A Python-based message broker system for managing data streams and communication between services.
-
-## Features
-
-- Message producer and consumer components
-- Docker-based broker infrastructure
-
-## Getting Started
-
-### Prerequisites
-
-- Docker & Docker Compose
-
-### Installation
-
+# Installation
+1. Build the Image (The API and the Worker(aka "consumer.py") share the same image)
 ```bash
-# Clone the repository
-git clone https://github.com/username/gate-weimar.git
 
-# Navigate to the project directory
-cd gate-weimar
-
-# Install Python dependencies (first time usage)
-poetry install
-
-# Start the Python environment
-poetry shell
-
-# Start the broker infrastructure (make sure docker is running)
-cd gate_weimar/broker
-docker-compose up -d
-
-# Return to base folder
-cd ..
+docker compose build
 ```
 
-### Usage
+2. This starts Redpanda, Redpanda Console, and the Pipeline Manager API.
+```Bash
 
-```bash
-# Start the producer
-poetry shell
-python producer.py
-
-# Start the consumer (in another terminal)
-poetry shell
-python consumer.py
+docker compose up -d
 ```
+
+# Usage
+1. Open Swagger UI ( http://localhost:8000/docs )
+
+2. Create Input Topic and add Input Messages
+
+- Option A: Open Redpanda Console ( http://localhost:8080 ), create the input topic, and produce a message like:
+
+```{"value": 10}```
+
+- Option B: Enable automatic topic and message generation by setting "allow_producer": true in your payload.
+
+3. Send a POST request to /start
+
+- Sample Payload for Option A
+```Json
+{
+  "input_topic": "numbers_in",
+  "output_topic": "numbers_out",
+  "transformations": [
+    "def addNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] + 100\n    return row",
+    "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
+  ]
+}
+```
+- Sample Payload for Option B
+```Json
+{
+  "input_topic": "input_topic",
+  "output_topic": "output_topic",
+  "transformations": [
+    "def addNumber(row):\n    for key in row:\n        if key.startswith(\"channel_\"):\n            row[key] += 10\n    return row",
+    "def mulNumber(row):\n    for key in row:\n        if key.startswith(\"channel_\"):\n            row[key] *= 2\n    return row"
+  ],
+  "allow_producer": true,
+  "n_channels": 10,
+  "frequency": 1
+}
+```
+4. Check the numbers_out/output_topic topic in the Console. You should see the updated values upon transformation.
