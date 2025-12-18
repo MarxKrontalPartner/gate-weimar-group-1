@@ -3,9 +3,10 @@ import os
 import json
 import time
 import docker 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 
 class PipelineInput(BaseModel):
     input_topic: str
@@ -14,6 +15,23 @@ class PipelineInput(BaseModel):
     allow_producer: bool = False
     n_channels: int = 10
     frequency: float = 1.0
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for ws in self.active_connections:
+            await ws.send_json(message)
+
+manager = ConnectionManager()
 
 app = FastAPI(title="Pipeline Backend Docker Manager")
 
@@ -111,3 +129,16 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
 def process_data(pipeline: PipelineInput, background_tasks: BackgroundTasks):
     background_tasks.add_task(manage_pipeline_lifecycle, pipeline)
     return {"status": "accepted", "message": "Worker spawning initiated."}
+
+@app.websocket("/ws/stream")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()  # keep alive
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+@app.post("/stream/event")
+async def ingest_event(event: dict):
+    await manager.broadcast(event)

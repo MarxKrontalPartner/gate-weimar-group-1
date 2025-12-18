@@ -5,6 +5,24 @@ import traceback
 import uuid
 import ast
 from quixstreams import Application
+import requests
+
+FASTAPI_EVENT_ENDPOINT = "http://pipeline-manager:8000/stream/event"
+
+def emit_event(event_type, topic, data):
+    try:
+        requests.post(
+            FASTAPI_EVENT_ENDPOINT,
+            json={
+                "type": event_type,
+                "topic": topic,
+                "data": data
+            },
+            timeout=0.2  # non-blocking-ish
+        )
+    except Exception:
+        # UI should NEVER be able to crash the pipeline
+        pass
 
 def get_callable_function_for_transformation(transformation_script):
     local_scope = {}
@@ -58,11 +76,24 @@ def main():
         sdf = app.dataframe(input_topic)
 
         # This will print every message receiving from Kafka to the logs
-        sdf = sdf.update(lambda row: print(f"DEBUG INPUT: {row}"))
+        # sdf = sdf.update(lambda row: print(f"DEBUG INPUT: {row}"))
+
+        def handle_input(row):
+            print(f"DEBUG INPUT: {row}")
+            emit_event("input", input_topic_name, row)
+            return row
+
+        sdf = sdf.update(handle_input)
         
         for script in transformations:
             func = get_callable_function_for_transformation(script)
             sdf = sdf.apply(func).filter(lambda x: x is not None)
+        
+        def handle_output(row):
+            emit_event("output", output_topic_name, row)
+            return row
+
+        sdf = sdf.apply(handle_output)
             
         sdf.to_topic(output_topic)
 
