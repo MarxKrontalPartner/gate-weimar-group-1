@@ -61,7 +61,19 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput):
         auto_remove=False
     )
     
+
+
+def run_pipelines_sequentially(pipelines: list[PipelineInput]):
+    print(f"[BATCH] Received batch of {len(pipelines)} pipelines. Starting sequential execution...")
+    
+    for i, pipeline in enumerate(pipelines):
+        print(f"[BATCH] Starting Pipeline {i+1}/{len(pipelines)}: {pipeline.input_topic}")
+        manage_pipeline_lifecycle(pipeline)
+        print(f"[BATCH] Finished Pipeline {i+1}/{len(pipelines)}")
+    
+    print("[BATCH] All pipelines in this request have finished.")
+
 @app.post("/start")
-def process_data(pipeline: PipelineInput, background_tasks: BackgroundTasks):
-    background_tasks.add_task(manage_pipeline_lifecycle, pipeline)
-    return {"status": "accepted", "message": "Worker spawning initiated."}
+def process_data(pipelines: list[PipelineInput], background_tasks: BackgroundTasks):
+    background_tasks.add_task(run_pipelines_sequentially, pipelines)
+    return {"status": "accepted", "message": f"{len(pipelines)} pipelines queued for sequential execution."}
