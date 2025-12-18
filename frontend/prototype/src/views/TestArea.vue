@@ -293,23 +293,12 @@
 import { defineComponent, ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import MonacoEditor from 'monaco-editor-vue3'
-import {
-  ConnectionMode,
-  VueFlow,
-  useVueFlow,
-  Panel,
-  type Node,
-  type Edge,
-  type NodeMouseEvent,
-} from '@vue-flow/core'
+import {ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge, type NodeMouseEvent,} from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls, ControlButton } from '@vue-flow/controls'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
-
-// Chart.js imports - Run: npm install chart.js
-// Using chart.js/auto which auto-registers all components
 import { Chart as ChartJS, type ChartConfiguration, type ChartType } from 'chart.js/auto'
 
 // ============================================================================
@@ -362,10 +351,7 @@ interface MonacoGlobal {
   }
 }
 
-/**
- * TransformNodeData interface - MUST match CustomTransformNode.vue expectations
- * CustomTransformNode uses: reactiveData.code, reactiveData.content
- */
+
 interface TransformNodeData {
   content: string
   code?: string
@@ -443,16 +429,8 @@ export default defineComponent({
   },
 
   setup() {
-    // ==========================================================================
-    // ROUTER & VUE FLOW
-    // ==========================================================================
-
     const router = useRouter()
     const { fromObject, toObject, fitView, updateNodeData, getNode } = useVueFlow()
-
-    // ==========================================================================
-    // REACTIVE STATE
-    // ==========================================================================
 
     // Graph state
     const nodes = ref<Node[]>([])
@@ -503,13 +481,8 @@ export default defineComponent({
       message: '',
     })
 
-    // Editor instance reference
     let editorInstance: EditorInstance | null = null
-
-    // Countdown interval reference
     let countdownInterval: ReturnType<typeof setInterval> | null = null
-
-    // Debounce timeout reference
     let saveDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
     // ==========================================================================
@@ -704,10 +677,6 @@ export default defineComponent({
       showAlert('Debug Info', JSON.stringify(nodeInfo, null, 2), 'info')
     }
 
-    // ==========================================================================
-    // NODE MANAGEMENT
-    // ==========================================================================
-
     /**
      * Syncs the current editor content back to the active node's data
      * This updates both the local nodes array AND Vue Flow's internal state
@@ -816,7 +785,6 @@ export default defineComponent({
       console.log('Clicked node ID:', clickedNodeId)
       console.log('Clicked node type:', clickedNodeType)
 
-      // Only handle transform node clicks
       if (clickedNodeType !== NODE_TYPES.TRANSFORM) {
         return
       }
@@ -830,11 +798,8 @@ export default defineComponent({
       if (activeTransformId.value) {
         syncEditorToNode()
       }
-
-      // Clear outputs when switching nodes
       clearOutputs()
 
-      // Find the node in our local nodes array
       const targetNode = nodes.value.find((n) => n.id === clickedNodeId)
 
       console.log('Target node from nodes.value:', targetNode)
@@ -1167,7 +1132,6 @@ _captured_stderr = _stderr_buffer.getvalue()
       console.log('=== RENDER CHART CALLED ===')
       console.log('Chart data:', chartData)
 
-      // Destroy existing chart first
       destroyChart()
 
       const chartType = (chartData.chart_type as string) || 'bar'
@@ -1459,7 +1423,6 @@ _captured_stderr = _stderr_buffer.getvalue()
             return
           }
         }
-        // Fallback to JSON if table data is invalid
         otherOutput.value = JSON.stringify(result, null, 2)
         return
       }
@@ -1509,7 +1472,6 @@ _captured_stderr = _stderr_buffer.getvalue()
           return
         }
 
-        // Other arrays → JSON
         otherOutput.value = JSON.stringify(result, null, 2)
         return
       }
@@ -1609,7 +1571,6 @@ _captured_stderr = _stderr_buffer.getvalue()
         try {
           pyodideInstance.globals.delete(name)
         } catch {
-          // Ignore errors when deleting non-existent globals
         }
       }
     }
@@ -1879,32 +1840,20 @@ _captured_stderr = _stderr_buffer.getvalue()
       nodes,
       edges,
       ConnectionMode,
-
-      // Editor state
       transformationCode,
       inputData,
       editingCode,
       activeTransformId,
       monacoEditorRef,
       monacoOptions,
-
-      // UI state
       showSandboxBanner,
       showSaveConfirm,
       showResetInputConfirm,
-
-      // Debug
       debugNodes,
-
-      // Pyodide state
       pyodideLoading,
       pyodideError,
-
-      // Execution state
       isExecuting,
       executionTimeRemaining,
-
-      // Output state
       consoleOutput,
       errorOutput,
       tableOutput,
@@ -1912,21 +1861,13 @@ _captured_stderr = _stderr_buffer.getvalue()
       tableRows,
       otherOutput,
       runExecuted,
-
-      // Chart output
       chartOutput,
       chartTitle,
       chartCanvas,
-
-      // Alert modal
       alertModal,
-
-      // Computed
       canRun,
       runButtonTooltip,
       activeNodeName,
-
-      // Methods
       handleNodeClick,
       handleSaveCode,
       handleFitView,
@@ -1934,8 +1875,6 @@ _captured_stderr = _stderr_buffer.getvalue()
       toggleSandboxBanner,
       handleRunTransformation,
       cancelExecution,
-
-      // Modal handlers
       closeAlertModal,
       closeResetInputModal,
       handleKeepInput,
@@ -1945,16 +1884,12 @@ _captured_stderr = _stderr_buffer.getvalue()
       closeSaveConfirmModal,
       handleSaveAndGoBack,
       handleDiscardAndGoBack,
-
-      // Utilities
       formatCellValue,
     }
   },
 })
 </script>
 
-<!--
+<styles>
   STYLES MOVED TO MAIN STYLESHEET
-  Add the contents of testarea-styles.css to your main CSS file (e.g., src/assets/main.css)
-  Or import it: @import './testarea-styles.css';
--->
+</styles>

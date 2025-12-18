@@ -21,35 +21,23 @@ import UIkit from 'uikit'
 const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
   useVueFlow()
 
-// ===== ADDITION: Router for TestArea navigation =====
 const router = useRouter()
 
-// ===== ADDITION: Typed refs for proper synchronization =====
-const nodes = ref<Node[]>(initialNodes)
-const edges = ref<Edge[]>(initialEdges)
+const nodes = ref(initialNodes)
+const edges = ref(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
 
-/**
- * Counter for naming new transform nodes as "Transform N".
- * We will initialise it from existing nodes on mount so it
- * always continues from the highest index in the current graph.
- */
+
 let transformationNodeNumber = 2
 
-// ===== ADDITION: Function to refresh transform counter =====
-/**
- * Scan existing nodes, find the highest "Transform N",
- * and update `transformationNodeNumber` so new nodes
- * continue from that index.
- */
+
 function refreshTransformCounter() {
   let maxIndex = transformationNodeNumber
 
   for (const n of nodes.value) {
     if (n.type === 'custom-transform') {
-      // `data` is some object that may contain a `content` string
       const content = (n.data as { content?: string } | undefined)?.content
       if (!content) continue
 
@@ -66,7 +54,6 @@ function refreshTransformCounter() {
   transformationNodeNumber = maxIndex
 }
 
-// ===== ADDITION: onMounted hook to load from TestArea =====
 /**
  * On mount:
  * - If there is a graph coming back from TestArea, load it.
@@ -80,7 +67,6 @@ onMounted(() => {
     try {
       const graph = JSON.parse(savedGraph)
 
-      // Validate that nodes have required data
       const hasValidNodes = graph.nodes?.every((n: Node) => {
         if (n.type === 'custom-transform') {
           return n.data && typeof (n.data as { code?: string }).code === 'string'
@@ -96,7 +82,6 @@ onMounted(() => {
       } else {
         console.warn('Invalid graph data in sessionStorage, using initial nodes')
         sessionStorage.removeItem('testarea_graph')
-        // Keep using initialNodes (already set as default)
       }
     } catch (e) {
       console.error('Failed to load graph from TestArea:', e)
@@ -128,17 +113,7 @@ onConnect((connection) => {
 })
 
 // ===== ADDITION: Navigate to TestArea =====
-/**
- * Navigate to the TestArea view:
- * 1. serialise the current graph with `toObject`
- * 2. store it in sessionStorage
- * 3. push the /test-area route
- *
- * IMPORTANT: Route name 'test-area' must match:
- * - router/index.ts route definition
- * - CustomTransformNode.vue isInTestArea check
- * - TestArea.vue ROUTE_NAMES.TEST_AREA
- */
+
 function goToTestArea() {
   const graph = toObject()
   console.log('Sending graph to TestArea:', graph)
@@ -223,7 +198,6 @@ function delConfirm({ node }: { node: Node }) {
  * any nodes loaded back from TestArea).
  */
 function addNode() {
-  // Refresh counter to ensure we use the next available number
   refreshTransformCounter()
 
   const id = Date.now().toString()
@@ -275,7 +249,6 @@ const createRequest = async () => {
       transformations.push(connectedNode.data.code)
       node = connectedNode
     } else {
-      // check if the last node is the output node ie if the graph is connected
       if (!connectedNode || connectedNode.id !== outputNode?.id) {
         alert('graph not connected')
         return
@@ -439,12 +412,7 @@ const uploadJson = (event: Event) => {
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
         </button>
-        <!-- ===== ADDITION: TestArea button ===== -->
-        <button
-          class="uk-button uk-button-primary uk-button-small"
-          type="button"
-          @click="goToTestArea"
-        >
+        <button class="uk-button uk-button-primary uk-button-small" type="button" @click="goToTestArea">
           TestArea
         </button>
       </div>
