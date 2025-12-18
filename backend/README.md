@@ -39,8 +39,39 @@ docker compose up -d
     "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
   ]
 }
+- Sample Payload for Option B 
+```Json
+[
+  {
+    "input_topic": "numbers_in",
+    "output_topic": "numbers_out_1",
+    "transformations": [
+      "def addNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] + 100\n    return row",
+      "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
+    ]
+  },
+  {
+    "input_topic": "numbers_in",
+    "output_topic": "numbers_out_2",
+    "transformations": [
+      "def addNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] + 200\n    return row",
+      "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
+    ]
+  },
+  {
+    "input_topic": "numbers_in",
+    "output_topic": "numbers_out_3",
+    "transformations": [
+      "def addNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] + 300\n    return row",
+      "def mulNumber(row):\n    if 'value' in row:\n        row['value'] = row['value'] * 2\n    return row"
+    ]
+  }
+]
 ```
-- Sample Payload for Option B
+
+
+```
+- Sample Payload for Option C
 ```Json
 {
   "input_topic": "input_topic",
