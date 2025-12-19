@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Position, Handle } from '@vue-flow/core'
 import { CodeEditor } from 'monaco-editor-vue3'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 const { updateNodeData } = useVueFlow()
@@ -16,10 +16,13 @@ const onModalToggle = () => {
   showModal.value = !showModal.value
 }
 
+const emit = defineEmits(['take-snapshot'])
+
 const onSave = () => {
   updateNodeData(props.id, {
     code: reactiveData.code,
   })
+  emit('take-snapshot')
   onModalToggle()
 }
 
@@ -28,6 +31,14 @@ const editorOptions = {
   minimap: { enabled: false },
   automaticLayout: true,
 }
+
+watch(
+  () => props.data,
+  (newData) => {
+    Object.assign(reactiveData, newData)
+  },
+  { deep: true },
+)
 </script>
 
 <template>

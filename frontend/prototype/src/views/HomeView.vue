@@ -324,6 +324,15 @@ const uploadJson = (event: Event) => {
 }
 
 window.addEventListener('keydown', (e) => {
+  const isTyping =
+    ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') ||
+    document.activeElement?.classList.contains('monaco-editor') ||
+    document.querySelector('.uk-modal.uk-open')
+
+  if (isTyping) {
+    return
+  }
+
   if ((e.key === 'Delete' || e.key === 'Del') && getSelectedNodes.value.length > 0) {
     delConfirm()
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
@@ -380,8 +389,6 @@ const undo = async () => {
     if (previousState) {
       redoStack.value.push(currentState)
       fromObject(previousState)
-      // nextTick handles the DOM, but we add a tiny timeout to ensure
-      // Vue Flow internal events (like nodes-initialized) have finished
       await nextTick()
       await new Promise((resolve) => setTimeout(resolve, 50))
     }
@@ -474,7 +481,12 @@ const redo = async () => {
     </template>
 
     <template #node-custom-transform="props">
-      <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
+      <CustomTransformNode
+        :id="props.id"
+        :data="props.data"
+        :is-dark="dark"
+        @take-snapshot="takeSnapshot"
+      />
     </template>
 
     <template #node-custom-intermediate="props">
