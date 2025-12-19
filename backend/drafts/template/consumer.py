@@ -1,7 +1,7 @@
 from quixstreams import Application
 import uuid
 
-from logger import get_logger
+from backend.template.logger import get_logger
 
 
 class Consumer:
