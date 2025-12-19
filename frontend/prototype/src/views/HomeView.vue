@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
+import { ref, watch, nextTick } from 'vue'
+import { ConnectionMode, VueFlow, useVueFlow, Panel, type Edge, type FlowExportObject } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -9,6 +9,7 @@ import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
+import AppBar from '@/components/AppBar.vue'
 import UIkit from 'uikit'
 import CustomIntermediateNode from '@/components/CustomIntermediateNode.vue'
 import { type Payload } from '@/assets/payload.ts'
@@ -19,8 +20,18 @@ import { type Payload } from '@/assets/payload.ts'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
-  useVueFlow()
+const {
+  onInit,
+  onConnect,
+  addEdges,
+  toObject,
+  fromObject,
+  removeEdges,
+  removeNodes,
+  getOutgoers,
+  getSelectedEdges,
+  getSelectedNodes,
+} = useVueFlow()
 
 const nodes = ref(initialNodes)
 
@@ -38,6 +49,7 @@ const dark = ref(true)
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   vueFlowInstance.fitView()
+  takeSnapshot()
 })
 
 /**
@@ -98,26 +110,18 @@ watch(
 )
 
 function removeEdge({ edge }: { edge: Edge }) {
+  takeSnapshot()
   removeEdges(edge.id)
 }
 
-const nodeToDeleteId = ref('')
-
-function removeNode() {
-  if (nodeToDeleteId.value != '') {
-    removeNodes(nodeToDeleteId.value)
-    nodeToDeleteId.value = ''
-  }
-}
-
-function delConfirm({ node }: { node: Node }) {
-  nodeToDeleteId.value = node.id
+function delConfirm() {
   UIkit.modal('#del-confirm').show()
 }
 
 let transformationNodeNumber = 2
 
 function addNode() {
+  takeSnapshot()
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
@@ -140,6 +144,7 @@ function addNode() {
 }
 
 function addIntermediateNode() {
+  takeSnapshot()
   const id = Date.now().toString()
 
   nodes.value.push({
@@ -310,6 +315,97 @@ const uploadJson = (event: Event) => {
     reader.readAsText(file)
   }
 }
+
+window.addEventListener('keydown', (e) => {
+  if ((e.key === 'Delete' || e.key === 'Del') && getSelectedNodes.value.length > 0) {
+    delConfirm()
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault()
+    undo()
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+     e.preventDefault()
+    redo()
+  }
+})
+
+const deleteSelectedElements = () => {
+  takeSnapshot()
+  const selectedNodes = getSelectedNodes.value
+  const selectedEdges = getSelectedEdges.value
+  if (selectedNodes.length > 0) {
+    removeNodes(selectedNodes)
+  }
+
+  if (selectedEdges.length > 0) {
+    removeEdges(selectedEdges)
+  }
+}
+
+const history = ref<FlowExportObject[]>([])
+const redoStack = ref<FlowExportObject[]>([])
+const isInternalChange = ref(false)
+
+
+const takeSnapshot = () => {
+  console.log('Taking snapshot')
+  if (isInternalChange.value) return
+  history.value.push(structuredClone(toObject()))
+  redoStack.value = []
+  if (history.value.length > 50) {
+    history.value.shift()
+  }
+}
+
+const undo = async () => {
+  if (history.value.length === 0 || isInternalChange.value) return
+
+  isInternalChange.value = true
+  
+  const currentState = structuredClone(toObject())
+  let previousState = history.value.pop()
+
+  if (previousState) {
+    const isSame = JSON.stringify(previousState) === JSON.stringify(currentState)
+
+    if (isSame && history.value.length > 0) {
+      previousState = history.value.pop()
+    }
+
+    if (previousState) {
+      redoStack.value.push(currentState)
+      fromObject(previousState)
+      // nextTick handles the DOM, but we add a tiny timeout to ensure 
+      // Vue Flow internal events (like nodes-initialized) have finished
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
+
+  isInternalChange.value = false
+}
+
+const redo = async () => {
+  if (redoStack.value.length === 0 || isInternalChange.value) return
+
+  isInternalChange.value = true
+  
+  const currentState = structuredClone(toObject())
+  const nextState = redoStack.value.pop()
+
+  if (nextState) {
+    history.value.push(currentState)
+    fromObject(nextState)
+    
+    await nextTick()
+    // This delay prevents the @nodes-initialized event from clearing the redoStack
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+
+  isInternalChange.value = false
+}
+
+
+
 </script>
 
 <template>
@@ -322,9 +418,13 @@ const uploadJson = (event: Event) => {
     :min-zoom="0.2"
     :max-zoom="4"
     @edge-double-click="removeEdge"
-    @node-double-click="delConfirm"
     :connection-mode="ConnectionMode.Strict"
+    :delete-key-code="null"
+    @node-drag-start="takeSnapshot"
+    @connect-start="takeSnapshot"
+    @nodes-initialized="takeSnapshot"
   >
+    <AppBar :is-dark="dark" />
     <Panel position="bottom-center">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
@@ -339,7 +439,7 @@ const uploadJson = (event: Event) => {
         </button>
       </div></Panel
     >
-    <Panel position="top-center">
+    <Panel position="top-center" style="margin-top: 75px">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onRun">
           Run
@@ -350,6 +450,14 @@ const uploadJson = (event: Event) => {
         <input id="fileUpload" type="file" accept="application/json" @change="uploadJson" hidden />
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
+        </button>
+        <button
+          class="uk-button uk-button-small"
+          id="delete-button"
+          @click="delConfirm"
+          :disabled="getSelectedNodes.length === 0"
+        >
+          Delete Selected Nodes
         </button>
       </div>
     </Panel>
@@ -378,15 +486,33 @@ const uploadJson = (event: Event) => {
         <CustomIcon v-if="dark" name="sun" />
         <CustomIcon v-else name="moon" />
       </ControlButton>
+      <span
+        title="Undo"
+        uk-icon="reply"
+        id="additional-control-buttons"
+        :style="{ backgroundColor: dark ? '#333333' : 'white' }"
+        @click="undo"
+      ></span>
+      <span
+        title="Redo"
+        uk-icon="forward"
+        id="additional-control-buttons"
+        :style="{ backgroundColor: dark ? '#333333' : 'white' }"
+        @click="redo"
+      ></span>
     </Controls>
   </VueFlow>
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">Delete Node Confirmation</h2>
-      <p>Are you sure you want to delete this node? This action cannot be undone</p>
+      <p>Are you sure you want to delete the selected Nodes?</p>
       <p class="uk-text-right">
         <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
-        <button class="uk-button uk-delete-button uk-modal-close" @click="removeNode" type="button">
+        <button
+          class="uk-button uk-delete-button uk-modal-close"
+          @click="deleteSelectedElements"
+          type="button"
+        >
           Confirm
         </button>
       </p>
@@ -397,5 +523,30 @@ const uploadJson = (event: Event) => {
 <style scoped>
 .vue-flow :deep(.vue-flow__minimap) {
   border: 2px solid black;
+}
+
+#additional-control-buttons {
+  cursor: pointer;
+  display: flex;
+  width: 15px;
+  background-color: #333333;
+  padding: 5px;
+  border-bottom: 1px solid var(--v-theme-on-surface);
+}
+
+/* Hover effect for dark mode */
+.basic-flow.dark #additional-control-buttons:hover {
+  background-color: #4d4d4d !important;
+}
+
+/* Hover effect for light mode */
+.basic-flow:not(.dark) #additional-control-buttons:hover {
+  background-color: #f4f4f4 !important;
+}
+
+#delete-button{
+  height: 30px;
+  background-color: var(--mkpError);
+  color: white !important;
 }
 </style>
