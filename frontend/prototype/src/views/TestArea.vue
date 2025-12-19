@@ -1897,5 +1897,5 @@ _captured_stderr = _stderr_buffer.getvalue()
 </script>
 
 <styles>
-  STYLES MOVED TO MAIN STYLESHEET
+
 </styles>
