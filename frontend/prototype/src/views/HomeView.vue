@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { ConnectionMode, VueFlow, useVueFlow, Panel, type Edge, type FlowExportObject } from '@vue-flow/core'
+import {
+  ConnectionMode,
+  VueFlow,
+  useVueFlow,
+  Panel,
+  type Edge,
+  type FlowExportObject,
+} from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -323,7 +330,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault()
     undo()
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-     e.preventDefault()
+    e.preventDefault()
     redo()
   }
 })
@@ -345,7 +352,6 @@ const history = ref<FlowExportObject[]>([])
 const redoStack = ref<FlowExportObject[]>([])
 const isInternalChange = ref(false)
 
-
 const takeSnapshot = () => {
   console.log('Taking snapshot')
   if (isInternalChange.value) return
@@ -360,7 +366,7 @@ const undo = async () => {
   if (history.value.length === 0 || isInternalChange.value) return
 
   isInternalChange.value = true
-  
+
   const currentState = structuredClone(toObject())
   let previousState = history.value.pop()
 
@@ -374,10 +380,10 @@ const undo = async () => {
     if (previousState) {
       redoStack.value.push(currentState)
       fromObject(previousState)
-      // nextTick handles the DOM, but we add a tiny timeout to ensure 
+      // nextTick handles the DOM, but we add a tiny timeout to ensure
       // Vue Flow internal events (like nodes-initialized) have finished
       await nextTick()
-      await new Promise(resolve => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 50))
     }
   }
 
@@ -388,24 +394,21 @@ const redo = async () => {
   if (redoStack.value.length === 0 || isInternalChange.value) return
 
   isInternalChange.value = true
-  
+
   const currentState = structuredClone(toObject())
   const nextState = redoStack.value.pop()
 
   if (nextState) {
     history.value.push(currentState)
     fromObject(nextState)
-    
+
     await nextTick()
     // This delay prevents the @nodes-initialized event from clearing the redoStack
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
   }
 
   isInternalChange.value = false
 }
-
-
-
 </script>
 
 <template>
@@ -544,7 +547,7 @@ const redo = async () => {
   background-color: #f4f4f4 !important;
 }
 
-#delete-button{
+#delete-button {
   height: 30px;
   background-color: var(--mkpError);
   color: white !important;
