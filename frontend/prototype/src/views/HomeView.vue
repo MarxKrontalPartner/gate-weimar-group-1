@@ -355,14 +355,14 @@ const deleteSelectedElements = () => {
 }
 
 const history = ref<FlowExportObject[]>([])
-const historyIndex = ref(-1) 
+const historyIndex = ref(-1)
 const isInternalChange = ref(false)
 
-function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
-  let timeoutId: number
-  return (...args: Parameters<T>) => {
+function debounce(fn: () => void, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return () => {
     clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn(...args), delay)
+    timeoutId = setTimeout(() => fn(), delay)
   }
 }
 
@@ -370,7 +370,7 @@ const addToHistory = () => {
   if (isInternalChange.value) return
 
   const currentState = toObject()
-  
+
   if (historyIndex.value >= 0) {
     const lastSavedState = history.value[historyIndex.value]
     if (JSON.stringify(currentState) === JSON.stringify(lastSavedState)) {
@@ -384,18 +384,14 @@ const addToHistory = () => {
 
   history.value.push(structuredClone(currentState))
   historyIndex.value++
-  
+
   if (history.value.length > 50) {
     history.value.shift()
     historyIndex.value--
   }
 }
 
-watch(
-  [nodesData, edgesData], 
-  debounce(addToHistory, 500), 
-  { deep: true }
-)
+watch([nodesData, edgesData], debounce(addToHistory, 500), { deep: true })
 
 const applyState = async (state: FlowExportObject) => {
   nodesData.value = state.nodes || []
@@ -504,11 +500,7 @@ const redo = async () => {
     </template>
 
     <template #node-custom-transform="props">
-      <CustomTransformNode
-        :id="props.id"
-        :data="props.data"
-        :is-dark="dark"
-      />
+      <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
     </template>
 
     <template #node-custom-intermediate="props">
