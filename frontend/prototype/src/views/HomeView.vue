@@ -38,11 +38,12 @@ const {
   getOutgoers,
   getSelectedEdges,
   getSelectedNodes,
+  setViewport,
 } = useVueFlow()
 
-const nodes = ref(initialNodes)
+const nodesData = ref(initialNodes)
 
-const edges = ref(initialEdges)
+const edgesData = ref(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
@@ -56,7 +57,7 @@ const dark = ref(true)
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   vueFlowInstance.fitView()
-  takeSnapshot()
+  addToHistory()
 })
 
 /**
@@ -117,7 +118,6 @@ watch(
 )
 
 function removeEdge({ edge }: { edge: Edge }) {
-  takeSnapshot()
   removeEdges(edge.id)
 }
 
@@ -128,11 +128,10 @@ function delConfirm() {
 let transformationNodeNumber = 2
 
 function addNode() {
-  takeSnapshot()
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
-  nodes.value.push({
+  nodesData.value.push({
     id,
     position: { x: 400, y: 500 },
     type: 'custom-transform',
@@ -151,10 +150,9 @@ function addNode() {
 }
 
 function addIntermediateNode() {
-  takeSnapshot()
   const id = Date.now().toString()
 
-  nodes.value.push({
+  nodesData.value.push({
     id,
     position: { x: 400, y: 500 },
     type: 'custom-intermediate',
@@ -345,7 +343,6 @@ window.addEventListener('keydown', (e) => {
 })
 
 const deleteSelectedElements = () => {
-  takeSnapshot()
   const selectedNodes = getSelectedNodes.value
   const selectedEdges = getSelectedEdges.value
   if (selectedNodes.length > 0) {
@@ -358,70 +355,99 @@ const deleteSelectedElements = () => {
 }
 
 const history = ref<FlowExportObject[]>([])
-const redoStack = ref<FlowExportObject[]>([])
+const historyIndex = ref(-1) 
 const isInternalChange = ref(false)
 
-const takeSnapshot = () => {
-  console.log('Taking snapshot')
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+  let timeoutId: number
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }
+}
+
+const addToHistory = () => {
   if (isInternalChange.value) return
-  history.value.push(structuredClone(toObject()))
-  redoStack.value = []
+
+  const currentState = toObject()
+  
+  if (historyIndex.value >= 0) {
+    const lastSavedState = history.value[historyIndex.value]
+    if (JSON.stringify(currentState) === JSON.stringify(lastSavedState)) {
+      return
+    }
+  }
+
+  if (historyIndex.value < history.value.length - 1) {
+    history.value = history.value.slice(0, historyIndex.value + 1)
+  }
+
+  history.value.push(structuredClone(currentState))
+  historyIndex.value++
+  
   if (history.value.length > 50) {
     history.value.shift()
+    historyIndex.value--
+  }
+}
+
+watch(
+  [nodesData, edgesData], 
+  debounce(addToHistory, 500), 
+  { deep: true }
+)
+
+const applyState = async (state: FlowExportObject) => {
+  nodesData.value = state.nodes || []
+
+  await nextTick()
+
+  edgesData.value = state.edges || []
+
+  if (state.viewport) {
+    setViewport(state.viewport)
   }
 }
 
 const undo = async () => {
-  if (history.value.length === 0 || isInternalChange.value) return
+  if (historyIndex.value <= 0 || isInternalChange.value) return
 
   isInternalChange.value = true
 
-  const currentState = structuredClone(toObject())
-  let previousState = history.value.pop()
+  historyIndex.value--
+  const stateToRestore = history.value[historyIndex.value]
 
-  if (previousState) {
-    const isSame = JSON.stringify(previousState) === JSON.stringify(currentState)
-
-    if (isSame && history.value.length > 0) {
-      previousState = history.value.pop()
-    }
-
-    if (previousState) {
-      redoStack.value.push(currentState)
-      fromObject(previousState)
-      await nextTick()
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    }
+  if (stateToRestore) {
+    await applyState(stateToRestore)
   }
 
-  isInternalChange.value = false
+  setTimeout(() => {
+    isInternalChange.value = false
+  }, 100)
 }
 
 const redo = async () => {
-  if (redoStack.value.length === 0 || isInternalChange.value) return
+  if (historyIndex.value >= history.value.length - 1 || isInternalChange.value) return
 
   isInternalChange.value = true
 
-  const currentState = structuredClone(toObject())
-  const nextState = redoStack.value.pop()
+  historyIndex.value++
+  const stateToRestore = history.value[historyIndex.value]
 
-  if (nextState) {
-    history.value.push(currentState)
-    fromObject(nextState)
-
-    await nextTick()
-    // This delay prevents the @nodes-initialized event from clearing the redoStack
-    await new Promise((resolve) => setTimeout(resolve, 50))
+  if (stateToRestore) {
+    await applyState(stateToRestore)
   }
 
-  isInternalChange.value = false
+  setTimeout(() => {
+    isInternalChange.value = false
+  }, 100)
 }
 </script>
 
 <template>
   <VueFlow
-    v-model="nodes"
-    :edges="edges"
+    v-model="nodesData"
+    :edges="edgesData"
     :class="{ dark }"
     class="basic-flow"
     :default-viewport="{ zoom: 1 }"
@@ -430,9 +456,6 @@ const redo = async () => {
     @edge-double-click="removeEdge"
     :connection-mode="ConnectionMode.Strict"
     :delete-key-code="null"
-    @node-drag-start="takeSnapshot"
-    @connect-start="takeSnapshot"
-    @nodes-initialized="takeSnapshot"
   >
     <AppBar :is-dark="dark" />
     <Panel position="bottom-center">
@@ -485,7 +508,6 @@ const redo = async () => {
         :id="props.id"
         :data="props.data"
         :is-dark="dark"
-        @take-snapshot="takeSnapshot"
       />
     </template>
 
