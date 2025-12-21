@@ -174,7 +174,7 @@ body,
 .container {
   display: flex;
   flex-direction: column;
-  /* background: #4a5568; */
+  background: #4a5568;
   width: 175px;
   border: 1px solid black;
   padding: 3px;
