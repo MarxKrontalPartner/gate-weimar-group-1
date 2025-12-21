@@ -237,7 +237,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================================================
@@ -706,10 +708,7 @@
 
 .test-area .vue-flow__background {
   background-color: #1a1a2e;
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.08) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -730,7 +729,6 @@
   background: #f3f4f6;
   color: #111827;
 }
-
 
 /* ============================================================================
    SCROLLBAR STYLING
