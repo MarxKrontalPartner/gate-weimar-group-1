@@ -26,40 +26,12 @@ const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNo
 const router = useRouter()
 
 const nodes = ref(initialNodes)
+
 const edges = ref(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
 
-let transformationNodeNumber = 2
-
-function refreshTransformCounter() {
-  let maxIndex = transformationNodeNumber
-
-  for (const n of nodes.value) {
-    if (n.type === 'custom-transform') {
-      const content = (n.data as { content?: string } | undefined)?.content
-      if (!content) continue
-
-      const match = content.match(/Transform\s+(\d+)/i)
-      if (match) {
-        const num = Number(match[1])
-        if (!Number.isNaN(num) && num > maxIndex) {
-          maxIndex = num
-        }
-      }
-    }
-  }
-
-  transformationNodeNumber = maxIndex
-}
-
-/**
- * On mount:
- * - If there is a graph coming back from TestArea, load it.
- * - In all cases, refresh the transform counter so "Add a node"
- *   uses the next available index.
- */
 onMounted(() => {
   const savedGraph = sessionStorage.getItem('testarea_graph')
 
@@ -67,29 +39,17 @@ onMounted(() => {
     try {
       const graph = JSON.parse(savedGraph)
 
-      const hasValidNodes = graph.nodes?.every((n: Node) => {
-        if (n.type === 'custom-transform') {
-          return n.data && typeof (n.data as { code?: string }).code === 'string'
-        }
-        return true
-      })
-
-      if (hasValidNodes) {
+      if (graph.nodes && Array.isArray(graph.nodes)) {
         fromObject(graph)
         nodes.value = graph.nodes as Node[]
         edges.value = graph.edges as Edge[]
         console.log('Loaded graph from TestArea:', graph)
-      } else {
-        console.warn('Invalid graph data in sessionStorage, using initial nodes')
-        sessionStorage.removeItem('testarea_graph')
       }
     } catch (e) {
       console.error('Failed to load graph from TestArea:', e)
       sessionStorage.removeItem('testarea_graph')
     }
   }
-
-  refreshTransformCounter()
 })
 
 /**
@@ -113,16 +73,10 @@ onConnect((connection) => {
 })
 
 // ===== ADDITION: Navigate to TestArea =====
-
 function goToTestArea() {
   const graph = toObject()
-  console.log('Sending graph to TestArea:', graph)
-
   sessionStorage.setItem('testarea_graph', JSON.stringify(graph))
-
-  router.push({
-    name: 'test-area',
-  })
+  router.push({ name: 'test-area' })
 }
 
 /**
@@ -191,41 +145,28 @@ function delConfirm({ node }: { node: Node }) {
   UIkit.modal('#del-confirm').show()
 }
 
-// ===== MODIFIED: addNode with refreshTransformCounter and proper array handling =====
-/**
- * Add a new transform node. The node is named "Transform N"
- * where N continues from the highest existing index (including
- * any nodes loaded back from TestArea).
- */
-function addNode() {
-  refreshTransformCounter()
+let transformationNodeNumber = 2
 
+function addNode() {
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
-  const defaultCode = `def transform${transformationNodeNumber}(row: dict) -> dict:
+  nodes.value.push({
+    id,
+    position: { x: 400, y: 500 },
+    type: 'custom-transform',
+    data: {
+      content: `Transform ${transformationNodeNumber}`,
+      code: `def transform${transformationNodeNumber}(row: dict) -> dict:
     logger.info(f"before :: row :: {row}")
     for key in row:
         if key.startswith("channel_"):
             row[key] += 10
     logger.info(f"after :: row :: {row}")
     return row
-`
-
-  const newNode: Node = {
-    id,
-    position: { x: 400, y: 300 + Math.random() * 200 },
-    type: 'custom-transform',
-    data: {
-      content: `Transform ${transformationNodeNumber}`,
-      code: defaultCode,
+  `,
     },
-  }
-
-  // Use spread to create new array (better reactivity)
-  nodes.value = [...nodes.value, newNode]
-
-  console.log('Added new node:', newNode.id, 'with code length:', defaultCode.length)
+  })
 }
 
 function addIntermediateNode() {
@@ -381,15 +322,12 @@ const uploadJson = (event: Event) => {
         if (flow) {
           fromObject(flow)
 
-          // ===== ADDITION: Sync nodes/edges refs after import =====
           if (flow.nodes) {
             nodes.value = flow.nodes as Node[]
           }
           if (flow.edges) {
             edges.value = flow.edges as Edge[]
           }
-          // Refresh counter after import
-          refreshTransformCounter()
 
           const element = getFileElement()
           if (element) {
@@ -412,8 +350,8 @@ const uploadJson = (event: Event) => {
 
 <template>
   <VueFlow
-    v-model:nodes="nodes"
-    v-model:edges="edges"
+    v-model="nodes"
+    :edges="edges"
     :class="{ dark }"
     class="basic-flow"
     :default-viewport="{ zoom: 1 }"
