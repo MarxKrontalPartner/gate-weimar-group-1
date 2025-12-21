@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -22,12 +23,36 @@ import { type Payload } from '@/assets/payload.ts'
 const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
   useVueFlow()
 
+// ===== ADDITION: Router for TestArea navigation =====
+const router = useRouter()
+
 const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
+
+// ===== ADDITION: Load graph from TestArea on mount =====
+onMounted(() => {
+  const savedGraph = sessionStorage.getItem('testarea_graph')
+
+  if (savedGraph) {
+    try {
+      const graph = JSON.parse(savedGraph)
+
+      if (graph.nodes && Array.isArray(graph.nodes)) {
+        fromObject(graph)
+        nodes.value = graph.nodes as Node[]
+        edges.value = graph.edges as Edge[]
+        console.log('Loaded graph from TestArea:', graph)
+      }
+    } catch (e) {
+      console.error('Failed to load graph from TestArea:', e)
+      sessionStorage.removeItem('testarea_graph')
+    }
+  }
+})
 
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
@@ -48,6 +73,13 @@ onInit((vueFlowInstance) => {
 onConnect((connection) => {
   addEdges(connection)
 })
+
+// ===== ADDITION: Navigate to TestArea =====
+function goToTestArea() {
+  const graph = toObject()
+  sessionStorage.setItem('testarea_graph', JSON.stringify(graph))
+  router.push({ name: 'test-area' })
+}
 
 /**
  * To update a node or multiple nodes, you can
@@ -293,6 +325,14 @@ const uploadJson = (event: Event) => {
         if (flow) {
           fromObject(flow)
 
+          // ===== ADDITION: Sync nodes/edges refs after import =====
+          if (flow.nodes) {
+            nodes.value = flow.nodes as Node[]
+          }
+          if (flow.edges) {
+            edges.value = flow.edges as Edge[]
+          }
+
           const element = getFileElement()
           if (element) {
             element.value = ''
@@ -350,6 +390,13 @@ const uploadJson = (event: Event) => {
         <input id="fileUpload" type="file" accept="application/json" @change="uploadJson" hidden />
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
+        </button>
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="goToTestArea"
+        >
+          TestArea
         </button>
       </div>
     </Panel>
