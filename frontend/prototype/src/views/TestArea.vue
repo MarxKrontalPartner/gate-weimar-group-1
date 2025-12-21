@@ -292,7 +292,9 @@ declare const loadPyodide: (options?: {
 }) => Promise<PyodideInterface>
 
 interface PyProxy {
-  toJs: (options?: { dict_converter?: (entries: Iterable<[string, unknown]>) => unknown }) => unknown
+  toJs: (options?: {
+    dict_converter?: (entries: Iterable<[string, unknown]>) => unknown
+  }) => unknown
   destroy: () => void
 }
 
@@ -413,7 +415,12 @@ export default defineComponent({
     let saveDebounceTimeout: ReturnType<typeof setTimeout> | null = null
 
     const canRun = computed<boolean>(() => {
-      return !!activeTransformId.value && transformationCode.value.trim().length > 0 && !pyodideLoading.value && !pyodideError.value
+      return (
+        !!activeTransformId.value &&
+        transformationCode.value.trim().length > 0 &&
+        !pyodideLoading.value &&
+        !pyodideError.value
+      )
     })
 
     const runButtonTooltip = computed<string>(() => {
@@ -446,7 +453,11 @@ export default defineComponent({
       insertSpaces: true,
     }
 
-    const showAlert = (title: string, message: string, type: 'info' | 'warning' | 'error' | 'success' = 'info'): void => {
+    const showAlert = (
+      title: string,
+      message: string,
+      type: 'info' | 'warning' | 'error' | 'success' = 'info',
+    ): void => {
       alertModal.value = { show: true, type, title, message }
     }
 
@@ -463,13 +474,22 @@ export default defineComponent({
         return value.toFixed(4)
       }
       if (typeof value === 'object') {
-        try { return JSON.stringify(value) } catch { return String(value) }
+        try {
+          return JSON.stringify(value)
+        } catch {
+          return String(value)
+        }
       }
       return String(value)
     }
 
     const isPyProxy = (obj: unknown): obj is PyProxy => {
-      return obj !== null && typeof obj === 'object' && 'toJs' in obj && typeof (obj as PyProxy).toJs === 'function'
+      return (
+        obj !== null &&
+        typeof obj === 'object' &&
+        'toJs' in obj &&
+        typeof (obj as PyProxy).toJs === 'function'
+      )
     }
 
     const deepConvertToJS = (obj: unknown): unknown => {
@@ -479,17 +499,23 @@ export default defineComponent({
           const converted = obj.toJs({ dict_converter: Object.fromEntries })
           obj.destroy()
           return deepConvertToJS(converted)
-        } catch { return obj }
+        } catch {
+          return obj
+        }
       }
       if (obj instanceof Map) {
         const plain: Record<string, unknown> = {}
-        obj.forEach((value, key) => { plain[String(key)] = deepConvertToJS(value) })
+        obj.forEach((value, key) => {
+          plain[String(key)] = deepConvertToJS(value)
+        })
         return plain
       }
       if (Array.isArray(obj)) return obj.map((item) => deepConvertToJS(item))
       if (typeof obj === 'object') {
         const plain: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(obj)) { plain[key] = deepConvertToJS(value) }
+        for (const [key, value] of Object.entries(obj)) {
+          plain[key] = deepConvertToJS(value)
+        }
         return plain
       }
       return obj
@@ -510,14 +536,16 @@ export default defineComponent({
           const maxLine = model.getLineCount()
           const actualLine = Math.min(lineNumber, maxLine)
           const endColumn = model.getLineLength(actualLine) + 1
-          monaco.editor.setModelMarkers(model, 'owner', [{
-            startLineNumber: actualLine,
-            startColumn: 1,
-            endLineNumber: actualLine,
-            endColumn,
-            message,
-            severity: monaco.MarkerSeverity.Error,
-          }])
+          monaco.editor.setModelMarkers(model, 'owner', [
+            {
+              startLineNumber: actualLine,
+              startColumn: 1,
+              endLineNumber: actualLine,
+              endColumn,
+              message,
+              severity: monaco.MarkerSeverity.Error,
+            },
+          ])
           editorInstance.revealLineInCenter(actualLine)
           editorInstance.setPosition({ lineNumber: actualLine, column: 1 })
         }
@@ -539,7 +567,7 @@ export default defineComponent({
       const linePattern = /line\s+(\d+)/gi
       const allLineMatches = [...errorMessage.matchAll(linePattern)]
       if (allLineMatches.length > 0) {
-        const reasonableMatches = allLineMatches.filter(m => {
+        const reasonableMatches = allLineMatches.filter((m) => {
           const num = Number.parseInt(m[1] || '0', 10)
           return num > WRAPPER_LINES_BEFORE_USER_CODE && num < WRAPPER_LINES_BEFORE_USER_CODE + 500
         })
@@ -583,26 +611,77 @@ export default defineComponent({
 
     const generateErrorSuggestion = (errorMessage: string): string => {
       const suggestions: Array<{ pattern: RegExp; suggestion: string }> = [
-        { pattern: /SyntaxError.*unexpected EOF/i, suggestion: 'Check for missing closing brackets, parentheses, or incomplete statements.' },
-        { pattern: /IndentationError.*unexpected indent/i, suggestion: 'This line has extra indentation. Remove extra spaces at the beginning.' },
-        { pattern: /IndentationError.*expected an indented block/i, suggestion: 'Add indented code after this statement.' },
-        { pattern: /IndentationError/i, suggestion: 'Check your indentation. Python uses 4 spaces for each level.' },
-        { pattern: /NameError.*'(\w+)'.*not defined/i, suggestion: 'The variable or function "$1" is not defined. Check for typos.' },
-        { pattern: /NameError.*not defined/i, suggestion: 'The variable or function is not defined. Check for typos.' },
-        { pattern: /TypeError.*takes \d+ positional argument/i, suggestion: 'Wrong number of arguments passed to the function.' },
-        { pattern: /TypeError.*argument/i, suggestion: 'Check the number and types of arguments passed.' },
-        { pattern: /KeyError.*'(\w+)'/i, suggestion: 'Key "$1" does not exist. Use .get("$1", default) instead.' },
+        {
+          pattern: /SyntaxError.*unexpected EOF/i,
+          suggestion: 'Check for missing closing brackets, parentheses, or incomplete statements.',
+        },
+        {
+          pattern: /IndentationError.*unexpected indent/i,
+          suggestion: 'This line has extra indentation. Remove extra spaces at the beginning.',
+        },
+        {
+          pattern: /IndentationError.*expected an indented block/i,
+          suggestion: 'Add indented code after this statement.',
+        },
+        {
+          pattern: /IndentationError/i,
+          suggestion: 'Check your indentation. Python uses 4 spaces for each level.',
+        },
+        {
+          pattern: /NameError.*'(\w+)'.*not defined/i,
+          suggestion: 'The variable or function "$1" is not defined. Check for typos.',
+        },
+        {
+          pattern: /NameError.*not defined/i,
+          suggestion: 'The variable or function is not defined. Check for typos.',
+        },
+        {
+          pattern: /TypeError.*takes \d+ positional argument/i,
+          suggestion: 'Wrong number of arguments passed to the function.',
+        },
+        {
+          pattern: /TypeError.*argument/i,
+          suggestion: 'Check the number and types of arguments passed.',
+        },
+        {
+          pattern: /KeyError.*'(\w+)'/i,
+          suggestion: 'Key "$1" does not exist. Use .get("$1", default) instead.',
+        },
         { pattern: /KeyError/i, suggestion: 'Dictionary key does not exist. Use .get() method.' },
-        { pattern: /AttributeError.*'(\w+)'.*no attribute.*'(\w+)'/i, suggestion: 'Object "$1" has no attribute "$2".' },
+        {
+          pattern: /AttributeError.*'(\w+)'.*no attribute.*'(\w+)'/i,
+          suggestion: 'Object "$1" has no attribute "$2".',
+        },
         { pattern: /AttributeError/i, suggestion: 'Object does not have this attribute.' },
-        { pattern: /SyntaxError.*invalid syntax.*#/i, suggestion: 'Remove # if you want this line to execute, or fix syntax before it.' },
-        { pattern: /SyntaxError.*invalid syntax/i, suggestion: 'Check for missing colons, operators, or mismatched quotes.' },
-        { pattern: /SyntaxError.*expected ':'/i, suggestion: 'Add a colon (:) at the end of if/for/while/def statements.' },
-        { pattern: /SyntaxError.*EOL while scanning string/i, suggestion: 'Unclosed string. Make sure quotes are matched.' },
-        { pattern: /ZeroDivisionError/i, suggestion: 'Division by zero. Check divisor is not zero.' },
-        { pattern: /IndexError.*out of range/i, suggestion: 'List index out of range. Check index exists.' },
+        {
+          pattern: /SyntaxError.*invalid syntax.*#/i,
+          suggestion: 'Remove # if you want this line to execute, or fix syntax before it.',
+        },
+        {
+          pattern: /SyntaxError.*invalid syntax/i,
+          suggestion: 'Check for missing colons, operators, or mismatched quotes.',
+        },
+        {
+          pattern: /SyntaxError.*expected ':'/i,
+          suggestion: 'Add a colon (:) at the end of if/for/while/def statements.',
+        },
+        {
+          pattern: /SyntaxError.*EOL while scanning string/i,
+          suggestion: 'Unclosed string. Make sure quotes are matched.',
+        },
+        {
+          pattern: /ZeroDivisionError/i,
+          suggestion: 'Division by zero. Check divisor is not zero.',
+        },
+        {
+          pattern: /IndexError.*out of range/i,
+          suggestion: 'List index out of range. Check index exists.',
+        },
         { pattern: /ValueError/i, suggestion: 'Invalid value. Check input data types.' },
-        { pattern: /ImportError|ModuleNotFoundError/i, suggestion: 'Module not found. Only standard library available.' },
+        {
+          pattern: /ImportError|ModuleNotFoundError/i,
+          suggestion: 'Module not found. Only standard library available.',
+        },
       ]
       for (const { pattern, suggestion } of suggestions) {
         const match = errorMessage.match(pattern)
@@ -623,12 +702,18 @@ export default defineComponent({
       const currentNode = nodes.value[nodeIndex]
       if (!currentNode) return
       const currentData = (currentNode.data || {}) as TransformNodeData
-      nodes.value[nodeIndex] = { ...currentNode, data: { ...currentData, code: transformationCode.value } }
+      nodes.value[nodeIndex] = {
+        ...currentNode,
+        data: { ...currentData, code: transformationCode.value },
+      }
       updateNodeData(activeTransformId.value, { ...currentData, code: transformationCode.value })
     }
 
     const destroyChart = (): void => {
-      if (chartInstance) { chartInstance.destroy(); chartInstance = null }
+      if (chartInstance) {
+        chartInstance.destroy()
+        chartInstance = null
+      }
     }
 
     const clearOutputs = (): void => {
@@ -653,7 +738,11 @@ export default defineComponent({
       if (lastErrorInfo.value) {
         const { line, message, suggestion } = lastErrorInfo.value
         setEditorErrorMarker(line, message)
-        showAlert('🔍 Error Found', `📍 Line ${line}: ${message}\n\n💡 Suggestion:\n${suggestion}`, 'error')
+        showAlert(
+          '🔍 Error Found',
+          `📍 Line ${line}: ${message}\n\n💡 Suggestion:\n${suggestion}`,
+          'error',
+        )
         return
       }
       if (errorOutput.value) {
@@ -663,7 +752,10 @@ export default defineComponent({
         const errorLines = errorOutput.value.split('\n')
         let shortError = ''
         for (const errLine of errorLines) {
-          if (errLine.includes('Error:') || errLine.includes('Exception:')) { shortError = errLine.trim(); break }
+          if (errLine.includes('Error:') || errLine.includes('Exception:')) {
+            shortError = errLine.trim()
+            break
+          }
         }
         if (!shortError) shortError = errorLines[errorLines.length - 1]?.trim() || 'Unknown error'
         if (lineNumber && lineNumber > 0) {
@@ -678,7 +770,11 @@ export default defineComponent({
         return
       }
       clearEditorMarkers()
-      showAlert('✅ No Errors Found', 'The code appears to be syntactically correct.\n\nRun the transformation to test its functionality.', 'success')
+      showAlert(
+        '✅ No Errors Found',
+        'The code appears to be syntactically correct.\n\nRun the transformation to test its functionality.',
+        'success',
+      )
     }
 
     const handleNodeClick = (event: NodeMouseEvent): void => {
@@ -701,7 +797,9 @@ export default defineComponent({
       }
     }
 
-    const handleEditorChange = (newValue: string): void => { transformationCode.value = newValue }
+    const handleEditorChange = (newValue: string): void => {
+      transformationCode.value = newValue
+    }
 
     const handleSaveCode = (): void => {
       if (!activeTransformId.value) {
@@ -712,12 +810,23 @@ export default defineComponent({
       showAlert('Code Saved', 'The code has been saved to the transform node.', 'info')
     }
 
-    const handleFitView = (): void => { fitView() }
-    const onEditorMounted = (editor: EditorInstance): void => { editorInstance = editor }
-    const toggleSandboxBanner = (): void => { showSandboxBanner.value = !showSandboxBanner.value }
+    const handleFitView = (): void => {
+      fitView()
+    }
+    const onEditorMounted = (editor: EditorInstance): void => {
+      editorInstance = editor
+    }
+    const toggleSandboxBanner = (): void => {
+      showSandboxBanner.value = !showSandboxBanner.value
+    }
 
-    const handleRequestSaveAndBack = (): void => { syncEditorToNode(); showSaveConfirm.value = true }
-    const closeSaveConfirmModal = (): void => { showSaveConfirm.value = false }
+    const handleRequestSaveAndBack = (): void => {
+      syncEditorToNode()
+      showSaveConfirm.value = true
+    }
+    const closeSaveConfirmModal = (): void => {
+      showSaveConfirm.value = false
+    }
 
     const handleSaveAndGoBack = (): void => {
       syncEditorToNode()
@@ -737,10 +846,15 @@ export default defineComponent({
       if (pyodideLoadPromise) return pyodideLoadPromise
       pyodideLoadPromise = loadPyodide({
         indexURL: PYODIDE_CONFIG.INDEX_URL,
-        stdout: (text: string) => { consoleOutput.value += text + '\n' },
+        stdout: (text: string) => {
+          consoleOutput.value += text + '\n'
+        },
         stderr: (text: string) => {
-          if (text.includes('Error') || text.includes('Traceback')) { errorOutput.value += text + '\n' }
-          else { consoleOutput.value += text + '\n' }
+          if (text.includes('Error') || text.includes('Traceback')) {
+            errorOutput.value += text + '\n'
+          } else {
+            consoleOutput.value += text + '\n'
+          }
         },
       })
       pyodideInstance = await pyodideLoadPromise
@@ -749,7 +863,11 @@ export default defineComponent({
 
     const validateInputJson = (rawInput: string): Record<string, unknown> | null => {
       if (!rawInput) {
-        showAlert('No Input Data', `Please enter a JSON object.\n\nExample: ${EXAMPLE_JSON}`, 'warning')
+        showAlert(
+          'No Input Data',
+          `Please enter a JSON object.\n\nExample: ${EXAMPLE_JSON}`,
+          'warning',
+        )
         errorOutput.value = `No input data. Example: ${EXAMPLE_JSON}`
         runExecuted.value = true
         return null
@@ -757,7 +875,11 @@ export default defineComponent({
       try {
         const parsed: unknown = JSON.parse(rawInput)
         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-          showAlert('Invalid Input Format', `Please provide a JSON object.\n\nExample: ${EXAMPLE_JSON}`, 'warning')
+          showAlert(
+            'Invalid Input Format',
+            `Please provide a JSON object.\n\nExample: ${EXAMPLE_JSON}`,
+            'warning',
+          )
           errorOutput.value = `Input must be a JSON object. Example: ${EXAMPLE_JSON}`
           runExecuted.value = true
           return null
@@ -765,7 +887,11 @@ export default defineComponent({
         return parsed as Record<string, unknown>
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : String(e)
-        showAlert('Invalid JSON', `Failed to parse: ${message}\n\nExample: ${EXAMPLE_JSON}`, 'error')
+        showAlert(
+          'Invalid JSON',
+          `Failed to parse: ${message}\n\nExample: ${EXAMPLE_JSON}`,
+          'error',
+        )
         errorOutput.value = `Invalid JSON: ${message}. Example: ${EXAMPLE_JSON}`
         runExecuted.value = true
         return null
@@ -918,19 +1044,60 @@ _captured_stderr = _stderr_buffer.getvalue()
         const colors = generateColors(data.length)
         config = {
           type: chartType as ChartType,
-          data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: colors.map((c) => c.replace('0.7', '1')), borderWidth: 1 }] },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } } },
+          data: {
+            labels,
+            datasets: [
+              {
+                data: values,
+                backgroundColor: colors,
+                borderColor: colors.map((c) => c.replace('0.7', '1')),
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } },
+          },
         }
       } else if (chartType === 'scatter') {
         const points = data.map((d) => ({ x: Number(d.x || 0), y: Number(d.y || 0) }))
         config = {
           type: 'scatter',
-          data: { datasets: [{ label: (chartData.label as string) || 'Data Points', data: points, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', pointRadius: 5 }] },
+          data: {
+            datasets: [
+              {
+                label: (chartData.label as string) || 'Data Points',
+                data: points,
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                pointRadius: 5,
+              },
+            ],
+          },
           options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
-              x: { title: { display: true, text: (chartData.x_label as string) || 'X', color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } },
-              y: { title: { display: true, text: (chartData.y_label as string) || 'Y', color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } },
+              x: {
+                title: {
+                  display: true,
+                  text: (chartData.x_label as string) || 'X',
+                  color: '#94a3b8',
+                },
+                grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                ticks: { color: '#94a3b8' },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: (chartData.y_label as string) || 'Y',
+                  color: '#94a3b8',
+                },
+                grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                ticks: { color: '#94a3b8' },
+              },
             },
             plugins: { legend: { labels: { color: '#e2e8f0' } } },
           },
@@ -938,36 +1105,62 @@ _captured_stderr = _stderr_buffer.getvalue()
       } else {
         const firstDataPoint = data[0] ?? {}
         const xAxis: string = (chartData.x_axis as string) || Object.keys(firstDataPoint)[0] || 'x'
-        const series: string[] = (chartData.series as string[]) || Object.keys(firstDataPoint).filter((k) => k !== xAxis)
+        const series: string[] =
+          (chartData.series as string[]) || Object.keys(firstDataPoint).filter((k) => k !== xAxis)
         const labels = data.map((d) => String(d[xAxis] ?? ''))
         const colors = generateColors(series.length)
         const datasets = series.map((s, idx) => {
           const color = colors[idx] ?? 'rgba(59, 130, 246, 0.7)'
-          return { label: s, data: data.map((d) => Number(d[s] || 0)), backgroundColor: chartType === 'line' ? 'transparent' : color, borderColor: color.replace('0.7', '1'), borderWidth: 2, fill: chartType === 'area', tension: 0.3 }
+          return {
+            label: s,
+            data: data.map((d) => Number(d[s] || 0)),
+            backgroundColor: chartType === 'line' ? 'transparent' : color,
+            borderColor: color.replace('0.7', '1'),
+            borderWidth: 2,
+            fill: chartType === 'area',
+            tension: 0.3,
+          }
         })
         config = {
           type: (chartType === 'area' ? 'line' : chartType) as ChartType,
           data: { labels, datasets },
           options: {
-            responsive: true, maintainAspectRatio: false,
-            scales: { x: { grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } }, y: { grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } } },
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } },
+              y: { grid: { color: 'rgba(148, 163, 184, 0.2)' }, ticks: { color: '#94a3b8' } },
+            },
             plugins: { legend: { labels: { color: '#e2e8f0' } } },
           },
         }
       }
-      try { chartInstance = new ChartJS(ctx, config) }
-      catch { chartOutput.value = false; chartTitle.value = '' }
+      try {
+        chartInstance = new ChartJS(ctx, config)
+      } catch {
+        chartOutput.value = false
+        chartTitle.value = ''
+      }
     }
 
     const generateColors = (count: number): string[] => {
       const baseColors: readonly string[] = [
-        'rgba(59, 130, 246, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(249, 115, 22, 0.7)',
-        'rgba(168, 85, 247, 0.7)', 'rgba(236, 72, 153, 0.7)', 'rgba(20, 184, 166, 0.7)',
-        'rgba(245, 158, 11, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(99, 102, 241, 0.7)',
+        'rgba(59, 130, 246, 0.7)',
+        'rgba(34, 197, 94, 0.7)',
+        'rgba(249, 115, 22, 0.7)',
+        'rgba(168, 85, 247, 0.7)',
+        'rgba(236, 72, 153, 0.7)',
+        'rgba(20, 184, 166, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
+        'rgba(99, 102, 241, 0.7)',
         'rgba(16, 185, 129, 0.7)',
       ] as const
       const colors: string[] = []
-      for (let i = 0; i < count; i++) { const color = baseColors[i % baseColors.length]; if (color) colors.push(color) }
+      for (let i = 0; i < count; i++) {
+        const color = baseColors[i % baseColors.length]
+        if (color) colors.push(color)
+      }
       return colors
     }
 
@@ -980,7 +1173,8 @@ _captured_stderr = _stderr_buffer.getvalue()
     const getExplicitOutputType = (result: unknown): string | null => {
       if (typeof result !== 'object' || result === null || Array.isArray(result)) return null
       const obj = result as Record<string, unknown>
-      if ('output_type' in obj && typeof obj.output_type === 'string') return obj.output_type.toLowerCase()
+      if ('output_type' in obj && typeof obj.output_type === 'string')
+        return obj.output_type.toLowerCase()
       return null
     }
 
@@ -993,16 +1187,27 @@ _captured_stderr = _stderr_buffer.getvalue()
 
     const processExecutionResult = (result: unknown): void => {
       if (result === null || result === undefined) {
-        if (!consoleOutput.value) consoleOutput.value = '(No output value, code executed successfully)'
+        if (!consoleOutput.value)
+          consoleOutput.value = '(No output value, code executed successfully)'
         return
       }
-      if (typeof result === 'string') { otherOutput.value = result; return }
+      if (typeof result === 'string') {
+        otherOutput.value = result
+        return
+      }
 
       const explicitType = getExplicitOutputType(result)
 
       if (explicitType === 'json') {
-        const dataToShow = typeof result === 'object' && result !== null && !Array.isArray(result) ? extractResultData(result as Record<string, unknown>) : result
-        try { otherOutput.value = JSON.stringify(dataToShow, null, 2) } catch { otherOutput.value = String(dataToShow) }
+        const dataToShow =
+          typeof result === 'object' && result !== null && !Array.isArray(result)
+            ? extractResultData(result as Record<string, unknown>)
+            : result
+        try {
+          otherOutput.value = JSON.stringify(dataToShow, null, 2)
+        } catch {
+          otherOutput.value = String(dataToShow)
+        }
         return
       }
 
@@ -1023,12 +1228,19 @@ _captured_stderr = _stderr_buffer.getvalue()
       }
 
       if (explicitType === 'chart' || isChartData(result)) {
-        renderChart(result as Record<string, unknown>).catch(() => { chartOutput.value = false; chartTitle.value = ''; otherOutput.value = JSON.stringify(result, null, 2) })
+        renderChart(result as Record<string, unknown>).catch(() => {
+          chartOutput.value = false
+          chartTitle.value = ''
+          otherOutput.value = JSON.stringify(result, null, 2)
+        })
         return
       }
 
       if (Array.isArray(result)) {
-        if (result.length === 0) { otherOutput.value = '[]'; return }
+        if (result.length === 0) {
+          otherOutput.value = '[]'
+          return
+        }
         const firstItem = result[0]
         if (typeof firstItem === 'object' && firstItem !== null && !Array.isArray(firstItem)) {
           tableColumns.value = Object.keys(firstItem as Record<string, unknown>)
@@ -1040,7 +1252,9 @@ _captured_stderr = _stderr_buffer.getvalue()
           tableColumns.value = (firstItem as unknown[]).map((_, idx) => `col${idx}`)
           tableRows.value = (result as unknown[][]).map((rowArr) => {
             const rowObj: Record<string, unknown> = {}
-            rowArr.forEach((val, idx) => { rowObj[`col${idx}`] = val })
+            rowArr.forEach((val, idx) => {
+              rowObj[`col${idx}`] = val
+            })
             return rowObj
           })
           tableOutput.value = true
@@ -1051,7 +1265,11 @@ _captured_stderr = _stderr_buffer.getvalue()
       }
 
       if (typeof result === 'object') {
-        try { otherOutput.value = JSON.stringify(result, null, 2) } catch { otherOutput.value = String(result) }
+        try {
+          otherOutput.value = JSON.stringify(result, null, 2)
+        } catch {
+          otherOutput.value = String(result)
+        }
         return
       }
       otherOutput.value = String(result)
@@ -1065,7 +1283,12 @@ _captured_stderr = _stderr_buffer.getvalue()
       }, 1000)
     }
 
-    const stopCountdown = (): void => { if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null } }
+    const stopCountdown = (): void => {
+      if (countdownInterval) {
+        clearInterval(countdownInterval)
+        countdownInterval = null
+      }
+    }
 
     const cancelExecution = (): void => {
       if (executionAbortController.value) executionAbortController.value.abort()
@@ -1078,19 +1301,57 @@ _captured_stderr = _stderr_buffer.getvalue()
     const clearPyodideGlobals = (): void => {
       if (!pyodideInstance) return
       const globalsToDelete = [
-        '__js_input', '_result', '_input_data', '_function_found', '_tried_functions',
-        '_user_functions', '_functions_before', '_functions_after', 'transform',
-        'transform1', 'transform2', 'transform3', 'transform4', 'transform5',
-        'transform6', 'transform7', 'transform8', 'transform9', 'transform10',
-        'main', 'run', 'process', 'execute', 'handle', 'compute', 'row', 'output',
-        'result', 'data', 'input_data', 'logger', 'Logger',
+        '__js_input',
+        '_result',
+        '_input_data',
+        '_function_found',
+        '_tried_functions',
+        '_user_functions',
+        '_functions_before',
+        '_functions_after',
+        'transform',
+        'transform1',
+        'transform2',
+        'transform3',
+        'transform4',
+        'transform5',
+        'transform6',
+        'transform7',
+        'transform8',
+        'transform9',
+        'transform10',
+        'main',
+        'run',
+        'process',
+        'execute',
+        'handle',
+        'compute',
+        'row',
+        'output',
+        'result',
+        'data',
+        'input_data',
+        'logger',
+        'Logger',
       ]
-      for (const name of globalsToDelete) { try { pyodideInstance.globals.delete(name) } catch { /* ignore */ } }
+      for (const name of globalsToDelete) {
+        try {
+          pyodideInstance.globals.delete(name)
+        } catch {
+          /* ignore */
+        }
+      }
     }
 
     const handleRunTransformation = async (): Promise<void> => {
-      if (!pyodideInstance) { showAlert('Python Not Ready', 'The Python runtime is still loading.', 'warning'); return }
-      if (!activeTransformId.value) { showAlert('No Transform Selected', 'Please click on a Transform node first.', 'warning'); return }
+      if (!pyodideInstance) {
+        showAlert('Python Not Ready', 'The Python runtime is still loading.', 'warning')
+        return
+      }
+      if (!activeTransformId.value) {
+        showAlert('No Transform Selected', 'Please click on a Transform node first.', 'warning')
+        return
+      }
 
       syncEditorToNode()
       consoleOutput.value = ''
@@ -1118,22 +1379,40 @@ _captured_stderr = _stderr_buffer.getvalue()
         const wrappedCode = buildPythonWrapper(userCode)
 
         const timeoutPromise = new Promise<never>((_, reject) => {
-          const timeoutId = setTimeout(() => { reject(new Error(`Execution timed out after ${PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS / 1000} seconds.`)) }, PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS)
-          executionAbortController.value?.signal.addEventListener('abort', () => { clearTimeout(timeoutId); reject(new Error('Execution cancelled')) })
+          const timeoutId = setTimeout(() => {
+            reject(
+              new Error(
+                `Execution timed out after ${PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS / 1000} seconds.`,
+              ),
+            )
+          }, PYODIDE_CONFIG.EXECUTION_TIMEOUT_MS)
+          executionAbortController.value?.signal.addEventListener('abort', () => {
+            clearTimeout(timeoutId)
+            reject(new Error('Execution cancelled'))
+          })
         })
 
-        const rawResult: unknown = await Promise.race([pyodideInstance.runPythonAsync(wrappedCode), timeoutPromise])
+        const rawResult: unknown = await Promise.race([
+          pyodideInstance.runPythonAsync(wrappedCode),
+          timeoutPromise,
+        ])
         runExecuted.value = true
 
         const result = deepConvertToJS(rawResult) as {
-          result?: unknown; stdout?: string; stderr?: string; function_found?: boolean; tried_functions?: string[]; user_functions?: string[]
+          result?: unknown
+          stdout?: string
+          stderr?: string
+          function_found?: boolean
+          tried_functions?: string[]
+          user_functions?: string[]
         } | null
 
         if (result && typeof result === 'object') {
           if (result.stdout) consoleOutput.value += result.stdout
           if (result.stderr && result.stderr.trim()) errorOutput.value += result.stderr
           if (!result.function_found) {
-            consoleOutput.value += '\n⚠️ No transform function found. Define a function like:\ndef transform(row: dict) -> dict:\n    # your code here\n    return row\n'
+            consoleOutput.value +=
+              '\n⚠️ No transform function found. Define a function like:\ndef transform(row: dict) -> dict:\n    # your code here\n    return row\n'
           }
           const actualResult = deepConvertToJS(result.result)
           processExecutionResult(actualResult)
@@ -1141,7 +1420,13 @@ _captured_stderr = _stderr_buffer.getvalue()
           processExecutionResult(result)
         }
 
-        if (!consoleOutput.value && !otherOutput.value && !tableOutput.value && !chartOutput.value && !errorOutput.value) {
+        if (
+          !consoleOutput.value &&
+          !otherOutput.value &&
+          !tableOutput.value &&
+          !chartOutput.value &&
+          !errorOutput.value
+        ) {
           consoleOutput.value = '(Code executed successfully with no output)'
         }
         clearEditorMarkers()
@@ -1155,19 +1440,31 @@ _captured_stderr = _stderr_buffer.getvalue()
         const errorLines = errMsg.split('\n')
         let shortError = ''
         for (const errLine of errorLines) {
-          if (errLine.includes('Error:') || errLine.includes('Exception:')) { shortError = errLine.trim(); break }
+          if (errLine.includes('Error:') || errLine.includes('Exception:')) {
+            shortError = errLine.trim()
+            break
+          }
         }
-        if (!shortError) shortError = errorLines[errorLines.length - 1]?.trim() || errMsg.split('\n')[0] || 'Error'
+        if (!shortError)
+          shortError = errorLines[errorLines.length - 1]?.trim() || errMsg.split('\n')[0] || 'Error'
 
         if (lineNumber !== null && lineNumber > 0) {
-          lastErrorInfo.value = { line: lineNumber, message: shortError + (codeContext ? `\nCode: ${codeContext}` : ''), suggestion: generateErrorSuggestion(errMsg) }
+          lastErrorInfo.value = {
+            line: lineNumber,
+            message: shortError + (codeContext ? `\nCode: ${codeContext}` : ''),
+            suggestion: generateErrorSuggestion(errMsg),
+          }
           setEditorErrorMarker(lineNumber, shortError)
         }
       } finally {
         stopCountdown()
         isExecuting.value = false
         executionAbortController.value = null
-        try { pyodideInstance?.globals.delete('__js_input') } catch { /* ignore */ }
+        try {
+          pyodideInstance?.globals.delete('__js_input')
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -1180,7 +1477,9 @@ _captured_stderr = _stderr_buffer.getvalue()
           if (graph.edges && Array.isArray(graph.edges)) edges.value = graph.edges as Edge[]
           fromObject(graph)
           await nextTick()
-        } catch { /* ignore parse errors */ }
+        } catch {
+          /* ignore parse errors */
+        }
       }
       try {
         await initializePyodide()
@@ -1202,18 +1501,56 @@ _captured_stderr = _stderr_buffer.getvalue()
 
     watch(transformationCode, () => {
       if (saveDebounceTimeout) clearTimeout(saveDebounceTimeout)
-      saveDebounceTimeout = setTimeout(() => { if (activeTransformId.value) syncEditorToNode() }, 1000)
+      saveDebounceTimeout = setTimeout(() => {
+        if (activeTransformId.value) syncEditorToNode()
+      }, 1000)
     })
 
     return {
-      nodes, edges, ConnectionMode, transformationCode, inputData, editingCode, activeTransformId,
-      monacoEditorRef, monacoOptions, showSandboxBanner, showSaveConfirm, pyodideLoading, pyodideError,
-      isExecuting, executionTimeRemaining, consoleOutput, errorOutput, tableOutput, tableColumns,
-      tableRows, otherOutput, runExecuted, chartOutput, chartTitle, chartCanvas, alertModal, canRun,
-      runButtonTooltip, activeNodeName, handleNodeClick, handleSaveCode, handleFitView, onEditorMounted,
-      toggleSandboxBanner, handleRunTransformation, handleDebugCode, cancelExecution, closeAlertModal,
-      handleEditorChange, handleRequestSaveAndBack, closeSaveConfirmModal, handleSaveAndGoBack,
-      handleDiscardAndGoBack, formatCellValue,
+      nodes,
+      edges,
+      ConnectionMode,
+      transformationCode,
+      inputData,
+      editingCode,
+      activeTransformId,
+      monacoEditorRef,
+      monacoOptions,
+      showSandboxBanner,
+      showSaveConfirm,
+      pyodideLoading,
+      pyodideError,
+      isExecuting,
+      executionTimeRemaining,
+      consoleOutput,
+      errorOutput,
+      tableOutput,
+      tableColumns,
+      tableRows,
+      otherOutput,
+      runExecuted,
+      chartOutput,
+      chartTitle,
+      chartCanvas,
+      alertModal,
+      canRun,
+      runButtonTooltip,
+      activeNodeName,
+      handleNodeClick,
+      handleSaveCode,
+      handleFitView,
+      onEditorMounted,
+      toggleSandboxBanner,
+      handleRunTransformation,
+      handleDebugCode,
+      cancelExecution,
+      closeAlertModal,
+      handleEditorChange,
+      handleRequestSaveAndBack,
+      closeSaveConfirmModal,
+      handleSaveAndGoBack,
+      handleDiscardAndGoBack,
+      formatCellValue,
     }
   },
 })
