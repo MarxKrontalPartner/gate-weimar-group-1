@@ -21,6 +21,7 @@
     "@vue-flow/controls": "^1.1.3",
     "@vue-flow/core": "^1.47.0",
     "@vue-flow/minimap": "^1.5.4",
+    "chart.js": "^4.5.1",
     "monaco-editor": "^0.54.0",
     "monaco-editor-vue3": "^1.0.4",
     "pinia": "^3.0.3",
