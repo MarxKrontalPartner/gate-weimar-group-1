@@ -41,9 +41,9 @@ const {
   setViewport,
 } = useVueFlow()
 
-const nodesData = ref(initialNodes)
+const nodes = ref(initialNodes)
 
-const edgesData = ref(initialEdges)
+const edges = ref(initialEdges)
 
 // our dark mode toggle flag
 const dark = ref(true)
@@ -131,7 +131,7 @@ function addNode() {
   const id = Date.now().toString()
   transformationNodeNumber += 1
 
-  nodesData.value.push({
+  nodes.value.push({
     id,
     position: { x: 400, y: 500 },
     type: 'custom-transform',
@@ -152,7 +152,7 @@ function addNode() {
 function addIntermediateNode() {
   const id = Date.now().toString()
 
-  nodesData.value.push({
+  nodes.value.push({
     id,
     position: { x: 400, y: 500 },
     type: 'custom-intermediate',
@@ -391,14 +391,14 @@ const addToHistory = () => {
   }
 }
 
-watch([nodesData, edgesData], debounce(addToHistory, 500), { deep: true })
+watch([nodes, edges], debounce(addToHistory, 500), { deep: true })
 
 const applyState = async (state: FlowExportObject) => {
-  nodesData.value = state.nodes || []
+  nodes.value = state.nodes || []
 
   await nextTick()
 
-  edgesData.value = state.edges || []
+  edges.value = state.edges || []
 
   if (state.viewport) {
     setViewport(state.viewport)
@@ -442,8 +442,8 @@ const redo = async () => {
 
 <template>
   <VueFlow
-    v-model="nodesData"
-    :edges="edgesData"
+    v-model="nodes"
+    :edges="edges"
     :class="{ dark }"
     class="basic-flow"
     :default-viewport="{ zoom: 1 }"

@@ -16,13 +16,10 @@ const onModalToggle = () => {
   showModal.value = !showModal.value
 }
 
-// const emit = defineEmits(['take-snapshot'])
-
 const onSave = () => {
   updateNodeData(props.id, {
     code: reactiveData.code,
   })
-  // emit('take-snapshot')
   onModalToggle()
 }
 

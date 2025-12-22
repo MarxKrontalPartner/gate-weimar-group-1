@@ -8,8 +8,8 @@ const props = defineProps(['isDark'])
 <template>
   <div id="app-bar" :class="{ 'dark-mode': isDark }">
     <div class="uk-position-left" id="logo_container">
-      <img :src="logoDark" alt="Logo_dark" width="280px" v-if="props.isDark" />
-      <img :src="logoLight" alt="Logo_light" width="280px" v-else />
+      <img :src="logoDark" class="logo-img" alt="Logo_dark" width="280px" v-if="props.isDark" />
+      <img :src="logoLight" class="logo-img" alt="Logo_light" width="280px" v-else />
     </div>
   </div>
 </template>
@@ -36,5 +36,9 @@ const props = defineProps(['isDark'])
   margin-top: 12px;
   height: 50px;
   width: auto;
+}
+
+.logo-img {
+  user-select: none;
 }
 </style>
