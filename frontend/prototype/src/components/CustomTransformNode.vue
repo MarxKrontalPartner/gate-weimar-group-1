@@ -18,7 +18,10 @@ const onSave = (newCode: string) => {
   <div class="container" :class="{ dark: isDark }">
     <Handle type="target" :position="Position.Left" :connectable="1" />
     <input v-model="reactiveData.content" class="nodrag uk-input input-nodes" />
-    <button class="uk-button uk-button-primary uk-button-small edit-code-btn" @click="showModal = true">
+    <button
+      class="uk-button uk-button-primary uk-button-small edit-code-btn"
+      @click="showModal = true"
+    >
       Edit Code
     </button>
     <Handle type="source" :position="Position.Right" :connectable="1" />
