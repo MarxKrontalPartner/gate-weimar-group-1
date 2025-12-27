@@ -10,6 +10,11 @@ const handleToggle = () => {
 }
 
 const props = defineProps(['isDark'])
+
+const flags: Record<string, string> = {
+  de: '🇩🇪',
+  en: '🇬🇧',
+}
 </script>
 
 <template>
@@ -28,6 +33,11 @@ const props = defineProps(['isDark'])
       <CustomIcon v-if="isDark" name="sun" />
       <CustomIcon v-else name="moon" />
     </div>
+    <select v-model="$i18n.locale">
+      <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">
+        {{ flags[locale] || '🌐' }} {{ locale.toUpperCase() }}
+      </option>
+    </select>
   </div>
 </template>
 

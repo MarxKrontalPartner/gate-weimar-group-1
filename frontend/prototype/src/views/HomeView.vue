@@ -444,28 +444,28 @@ const redo = async () => {
     <Panel position="bottom-center">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
-          Add transformation node
+          {{ $t('btns.addTransformationNode') }}
         </button>
         <button
           class="uk-button uk-button-primary uk-button-small"
           type="button"
           @click="addIntermediateNode"
         >
-          Add intermediate node
+          {{ $t('btns.addIntermediateNode') }}
         </button>
       </div></Panel
     >
     <Panel position="top-center" style="margin-top: 75px">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onRun">
-          Run
+          {{ $t('btns.run') }}
         </button>
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onExport">
-          Export
+          {{ $t('btns.export') }}
         </button>
         <input id="fileUpload" type="file" accept="application/json" @change="uploadJson" hidden />
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
-          Import
+          {{ $t('btns.import') }}
         </button>
         <button
           class="uk-button uk-button-small"
@@ -516,16 +516,18 @@ const redo = async () => {
   </VueFlow>
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
-      <h2 class="uk-modal-title">Delete Node Confirmation</h2>
-      <p>Are you sure you want to delete the selected Nodes?</p>
+      <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>
+      <p>{{ $t('text.nodeDeleteConfirm.warning') }}</p>
       <p class="uk-text-right">
-        <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
+        <button class="uk-button uk-cancel-button uk-modal-close" type="button">
+          {{ $t('btns.cancel') }}
+        </button>
         <button
           class="uk-button uk-delete-button uk-modal-close"
           @click="deleteSelectedNodes"
           type="button"
         >
-          Confirm
+          {{ $t('btns.confirm') }}
         </button>
       </p>
     </div>

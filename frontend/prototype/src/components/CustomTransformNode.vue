@@ -55,7 +55,7 @@ watch(
       uk-toggle="target: #modal-example"
       style="border-radius: 3px; width: auto"
     >
-      Edit Code
+      {{ $t('btns.editCode') }}
     </button>
 
     <!-- This is the modal -->
@@ -76,7 +76,7 @@ watch(
             class="uk-button uk-modal-close uk-save-button uk-button-small"
             type="button"
           >
-            Save
+            {{ $t('btns.save') }}
           </button>
         </p>
       </div>
