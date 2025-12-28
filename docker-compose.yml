@@ -56,36 +56,36 @@ services:
     depends_on:
       - redpanda
 
-  # --- the PYTHON MANAGER SERVICE ---
-  pipeline-manager:
-    build: .                          ## Builds the Dockerfile in current dir
-    image: my-pipeline-image:latest   ## IMPORTANT: Names the image so we can find it later
-    container_name: pipeline_manager
+  
+  pipeline-backend:
+    build: ./backend/prototype/api                          
+    image: my-api-image:latest   
+    container_name: pipeline_backend
     ports:
-      - "8000:8000"                   ## Access FastAPI at localhost:8000
+      - "8000:8000"                    
     networks:
       - redpanda_network
     volumes:
       # IMPORTANT: This gives the container permission to spawn other containers
       - /var/run/docker.sock:/var/run/docker.sock 
+      - ./backend/prototype/worker:/worker_code
     environment:
-      - WORKER_IMAGE_NAME=my-pipeline-image:latest
-   
+      - WORKER_IMAGE_NAME=my-worker-image:latest
       - DOCKER_NETWORK_NAME=pipeline-backend-lite_redpanda_network
       - BROKER_ADDRESS=redpanda:9092
     depends_on:
-      - redpanda
+      - redpanda  
 
   # ------------- FRONTEND -------------
   frontend:
     build:
-      context: ../../../frontend/prototype
+      context: ../frontend/prototype
       dockerfile: Dockerfile
     container_name: pipeline_frontend
     ports:
       - "5173:5173"   # matches the dev server port
     depends_on:
-      - pipeline-manager
+      - pipeline-backend
     networks:
       - redpanda_network
     volumes:

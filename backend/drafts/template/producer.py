@@ -6,7 +6,7 @@ from quixstreams import Application
 from quixstreams.models.messages import KafkaMessage
 
 
-from logger import get_logger
+from backend.template.logger import get_logger
 
 
 class Producer:
