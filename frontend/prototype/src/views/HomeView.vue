@@ -11,6 +11,13 @@ import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
 import UIkit from 'uikit'
 
+type StreamMessage = {
+  type: 'input' | 'output'   // message type
+  content: string            // message content (adjust if structure is different)
+  timestamp?: string         // optional timestamp
+  [key: string]: any         // if messages can have additional dynamic fields
+}
+
 /**
  * `useVueFlow` provides:
  * 1. a set of methods to interact with the VueFlow instance (like `fitView`, `setViewport`, `addEdges`, etc)
@@ -27,8 +34,9 @@ const edges = ref(initialEdges)
 // our dark mode toggle flag
 const dark = ref(true)
 
-const inputMessages = ref<any[]>([])
-const outputMessages = ref<any[]>([])
+const inputMessages = ref<StreamMessage[]>([])
+const outputMessages = ref<StreamMessage[]>([])
+const showIoPanel = ref(false)
 
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
@@ -295,7 +303,7 @@ const connectWebSocket = () => {
   }
 
   ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data)
+    const msg: StreamMessage = JSON.parse(event.data)
 
     if (msg.type === 'input') {
       inputMessages.value.push(msg)
@@ -353,9 +361,14 @@ connectWebSocket()
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
         </button>
+        <button
+        class="uk-button uk-button-primary uk-button-small"
+        type="button"@click="showIoPanel = !showIoPanel"
+>         Input / Output Panel
+         </button>
       </div>
     </Panel>
-    
+
 
 
     <template #node-custom-input="props">
@@ -369,7 +382,7 @@ connectWebSocket()
     <template #node-custom-transform="props">
       <CustomTransformNode :id="props.id" :data="props.data" :is-dark="dark" />
     </template>
-    
+  
 
     <Background pattern-color="#aaa" :gap="16" />
 
@@ -382,6 +395,7 @@ connectWebSocket()
     </Controls>
   </VueFlow>
 <div
+  v-if="showIoPanel"
   style="
     position: fixed !important;
     right: 10px !important;
@@ -404,7 +418,7 @@ connectWebSocket()
   <div
     style="
       flex: 1 !important;
-      overflow-y: auto !important;
+      overflow: auto !important;
       border-right: 1px solid #ddd !important;
       padding-right: 8px !important;
     "
@@ -412,21 +426,8 @@ connectWebSocket()
     <h4 style="margin: 0 0 8px 0 !important; color: #2e7d32 !important;">
       Input
     </h4>
-
-    <pre
-      v-for="(msg, i) in inputMessages.slice(-20)"
-      :key="'in-' + i"
-      style="
-        background: #f6f8fa !important;
-        padding: 6px !important;
-        border-radius: 4px !important;
-        font-size: 12px !important;
-        margin-bottom: 6px !important;
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-      "
-    >
-{{ JSON.stringify(msg, null, 2) }}
+    <pre style="margin: 0 !important;">
+{{ inputMessages.slice(-5) }}
     </pre>
   </div>
 
@@ -434,38 +435,21 @@ connectWebSocket()
   <div
     style="
       flex: 1 !important;
-      overflow-y: auto !important;
+      overflow: auto !important;
       padding-left: 8px !important;
     "
   >
     <h4 style="margin: 0 0 8px 0 !important; color: #1565c0 !important;">
       Output
     </h4>
-
-    <pre
-      v-for="(msg, i) in outputMessages.slice(-20)"
-      :key="'out-' + i"
-      style="
-        background: #f6f8fa !important;
-        padding: 6px !important;
-        border-radius: 4px !important;
-        font-size: 12px !important;
-        margin-bottom: 6px !important;
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-      "
-    >
-{{ JSON.stringify(msg, null, 2) }}
+    <pre style="margin: 0 !important;">
+{{ outputMessages.slice(-5) }}
     </pre>
   </div>
 </div>
 
 
 
-
-
-
-  
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">Delete Node Confirmation</h2>
