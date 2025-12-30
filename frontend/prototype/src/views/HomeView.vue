@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, inject, type Ref } from 'vue'
 import {
   ConnectionMode,
   VueFlow,
@@ -9,14 +9,12 @@ import {
   type FlowExportObject,
 } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { ControlButton, Controls } from '@vue-flow/controls'
+import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import { initialEdges, initialNodes } from '@/assets/initial-flow.ts'
-import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
-import AppBar from '@/components/AppBar.vue'
 import UIkit from 'uikit'
 import CustomIntermediateNode from '@/components/CustomIntermediateNode.vue'
 import { type Payload } from '@/assets/payload.ts'
@@ -36,7 +34,6 @@ const {
   removeEdges,
   removeNodes,
   getOutgoers,
-  getSelectedEdges,
   getSelectedNodes,
   setViewport,
 } = useVueFlow()
@@ -46,7 +43,7 @@ const nodes = ref(initialNodes)
 const edges = ref(initialEdges)
 
 // our dark mode toggle flag
-const dark = ref(true)
+const dark = inject('isDark') as Ref<boolean>
 
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
@@ -100,10 +97,6 @@ onConnect((connection) => {
 // function resetTransform() {
 //   setViewport({ x: 0, y: 0, zoom: 1 })
 // }
-
-function toggleDarkMode() {
-  dark.value = !dark.value
-}
 
 watch(
   dark,
@@ -342,15 +335,10 @@ window.addEventListener('keydown', (e) => {
   }
 })
 
-const deleteSelectedElements = () => {
+const deleteSelectedNodes = () => {
   const selectedNodes = getSelectedNodes.value
-  const selectedEdges = getSelectedEdges.value
   if (selectedNodes.length > 0) {
     removeNodes(selectedNodes)
-  }
-
-  if (selectedEdges.length > 0) {
-    removeEdges(selectedEdges)
   }
 }
 
@@ -453,7 +441,6 @@ const redo = async () => {
     :connection-mode="ConnectionMode.Strict"
     :delete-key-code="null"
   >
-    <AppBar :is-dark="dark" />
     <Panel position="bottom-center">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
@@ -511,10 +498,6 @@ const redo = async () => {
 
     <MiniMap node-color="#2b2b32" style="margin-bottom: 55px" />
     <Controls position="bottom-right" style="border: 1px; border-color: black; border-style: solid">
-      <ControlButton @click="toggleDarkMode">
-        <CustomIcon v-if="dark" name="sun" />
-        <CustomIcon v-else name="moon" />
-      </ControlButton>
       <span
         title="Undo"
         uk-icon="reply"
@@ -539,7 +522,7 @@ const redo = async () => {
         <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
         <button
           class="uk-button uk-delete-button uk-modal-close"
-          @click="deleteSelectedElements"
+          @click="deleteSelectedNodes"
           type="button"
         >
           Confirm
@@ -577,5 +560,13 @@ const redo = async () => {
   height: 30px;
   background-color: var(--mkpError);
   color: white !important;
+}
+
+#delete-button:disabled {
+  background-color: #979494;
+  color: #999;
+  cursor: not-allowed;
+  border-color: #dae0e5;
+  box-shadow: none;
 }
 </style>

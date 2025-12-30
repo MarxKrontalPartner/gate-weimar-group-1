@@ -1,6 +1,14 @@
 <script lang="ts" setup>
 import logoLight from '@/assets/MKP_Logo_Webseite.svg'
 import logoDark from '@/assets/MKP_Logo_Webseite_inverted.svg'
+import CustomIcon from '../components/CustomIcon.vue'
+
+const emit = defineEmits(['toggle-theme'])
+
+const handleToggle = () => {
+  console.log('Toggle theme emitted from AppBar')
+  emit('toggle-theme')
+}
 
 const props = defineProps(['isDark'])
 </script>
@@ -11,11 +19,22 @@ const props = defineProps(['isDark'])
       <img :src="logoDark" class="logo-img" alt="Logo_dark" width="280px" v-if="props.isDark" />
       <img :src="logoLight" class="logo-img" alt="Logo_light" width="280px" v-else />
     </div>
+
+    <div
+      class="uk-position-right"
+      id="toggle_container"
+      style="cursor: pointer"
+      @click="handleToggle"
+    >
+      <CustomIcon v-if="isDark" name="sun" />
+      <CustomIcon v-else name="moon" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 #app-bar {
+  color: black;
   background-color: white;
   position: fixed;
   top: 0;
@@ -28,7 +47,13 @@ const props = defineProps(['isDark'])
 }
 
 #app-bar.dark-mode {
+  color: white;
   background-color: var(--mkpDarkNav);
+}
+
+#toggle_container {
+  margin-top: 16px;
+  margin-right: 16px;
 }
 
 #logo_container {
