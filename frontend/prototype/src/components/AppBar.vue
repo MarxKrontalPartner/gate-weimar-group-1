@@ -10,6 +10,11 @@ const handleToggle = () => {
 }
 
 const props = defineProps(['isDark'])
+
+const flags: Record<string, string> = {
+  de: '🇩🇪',
+  en: '🇬🇧',
+}
 </script>
 
 <template>
@@ -19,14 +24,22 @@ const props = defineProps(['isDark'])
       <img :src="logoLight" class="logo-img" alt="Logo_light" width="280px" v-else />
     </div>
 
-    <div
-      class="uk-position-right"
-      id="toggle_container"
-      style="cursor: pointer"
-      @click="handleToggle"
-    >
-      <CustomIcon v-if="isDark" name="sun" />
-      <CustomIcon v-else name="moon" />
+    <div class="uk-position-right container-right">
+      <div class="locale-container">
+        <select id="locale-switcher" class="uk-select" v-model="$i18n.locale">
+          <option
+            v-for="locale in $i18n.availableLocales"
+            :key="`locale-${locale}`"
+            :value="locale"
+          >
+            {{ flags[locale] || '🌐' }} {{ locale.toUpperCase() }}
+          </option>
+        </select>
+      </div>
+      <div id="toggle_container" style="cursor: pointer" @click="handleToggle">
+        <CustomIcon v-if="isDark" name="sun" />
+        <CustomIcon v-else name="moon" />
+      </div>
     </div>
   </div>
 </template>
@@ -50,11 +63,6 @@ const props = defineProps(['isDark'])
   background-color: var(--mkpDarkNav);
 }
 
-#toggle_container {
-  margin-top: 16px;
-  margin-right: 16px;
-}
-
 #logo_container {
   margin-left: 20px;
   margin-top: 12px;
@@ -64,5 +72,16 @@ const props = defineProps(['isDark'])
 
 .logo-img {
   user-select: none;
+}
+
+.container-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 5px;
+
+  div:nth-child(2) {
+    margin-left: 10px;
+  }
 }
 </style>
