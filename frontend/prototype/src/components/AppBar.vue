@@ -6,7 +6,6 @@ import CustomIcon from '../components/CustomIcon.vue'
 const emit = defineEmits(['toggle-theme'])
 
 const handleToggle = () => {
-  console.log('Toggle theme emitted from AppBar')
   emit('toggle-theme')
 }
 

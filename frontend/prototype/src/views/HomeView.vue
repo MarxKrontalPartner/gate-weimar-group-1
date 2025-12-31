@@ -338,7 +338,7 @@ window.addEventListener('keydown', (e) => {
 const deleteSelectedNodes = () => {
   const selectedNodes = getSelectedNodes.value
   if (selectedNodes.length > 0) {
-    removeNodes(selectedNodes)
+    removeNodes(selectedNodes, true)
   }
 }
 
