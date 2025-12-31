@@ -18,7 +18,9 @@ import CustomOutputNode from '@/components/CustomOutputNode.vue'
 import UIkit from 'uikit'
 import CustomIntermediateNode from '@/components/CustomIntermediateNode.vue'
 import { type Payload } from '@/assets/payload.ts'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 /**
  * `useVueFlow` provides:
  * 1. a set of methods to interact with the VueFlow instance (like `fitView`, `setViewport`, `addEdges`, etc)
@@ -42,15 +44,8 @@ const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
 
-// our dark mode toggle flag
 const dark = inject('isDark') as Ref<boolean>
 
-/**
- * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
- * Any event that is available as `@event-name` on the VueFlow component is also available as `onEventName` on the composable and vice versa
- *
- * onInit is called when the VueFlow viewport is initialized
- */
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   vueFlowInstance.fitView()
@@ -65,38 +60,6 @@ onInit((vueFlowInstance) => {
 onConnect((connection) => {
   addEdges(connection)
 })
-
-/**
- * To update a node or multiple nodes, you can
- * 1. Mutate the node objects *if* you're using `v-model`
- * 2. Use the `updateNode` method (from `useVueFlow`) to update the node(s)
- * 3. Create a new array of nodes and pass it to the `nodes` ref
- */
-// function updatePos() {
-//   nodes.value = nodes.value.map((node: Node) => {
-//     return {
-//       ...node,
-//       position: {
-//         x: Math.random() * 400,
-//         y: Math.random() * 400,
-//       },
-//     }
-//   })
-// }
-
-/**
- * toObject transforms your current graph data to an easily persist-able object
- */
-// function logToObject() {
-//   console.log(toObject())
-// }
-
-/**
- * Resets the current viewport transformation (zoom & pan)
- */
-// function resetTransform() {
-//   setViewport({ x: 0, y: 0, zoom: 1 })
-// }
 
 watch(
   dark,
@@ -198,7 +161,7 @@ const createRequest = async () => {
     } else {
       // check if the last node is the output node ie if the graph is connected
       if (!connectedNode || connectedNode.id !== outputNode?.id) {
-        alert('graph not connected')
+        alert(t('text.runAlertError'))
         return
       }
       tempPayload.transformations = transformations

@@ -16,5 +16,6 @@ export const TranslationsDE = {
       title: 'Knoten löschen Bestätigung',
       warning: 'Möchten Sie die ausgewählten Knoten wirklich löschen?',
     },
+    runAlertError: 'Grafik nicht verbunden',
   },
 }

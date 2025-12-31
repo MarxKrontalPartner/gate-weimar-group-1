@@ -16,5 +16,6 @@ export const TranslationsEN = {
       title: 'Delete Node Confirmation',
       warning: 'Are you sure you want to delete the selected Nodes?',
     },
+    runAlertError: 'Graph not connected',
   },
 }
