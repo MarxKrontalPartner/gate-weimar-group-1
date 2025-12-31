@@ -7,6 +7,7 @@ export const TranslationsDE = {
     save: 'Speichern',
     cancel: 'Abbrechen',
     confirm: 'Bestätigen',
+    deleteConfirm: 'Ausgewählte Knoten löschen',
     addTransformationNode: 'Transformationsknoten hinzufügen',
     addIntermediateNode: 'Zwischenknoten hinzufügen',
   },

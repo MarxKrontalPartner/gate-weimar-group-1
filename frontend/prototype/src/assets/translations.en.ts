@@ -7,6 +7,7 @@ export const TranslationsEN = {
     save: 'Save',
     cancel: 'Cancel',
     confirm: 'Confirm',
+    deleteConfirm: 'Delete Selected Nodes',
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
   },

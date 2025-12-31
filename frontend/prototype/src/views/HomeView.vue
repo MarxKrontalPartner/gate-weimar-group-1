@@ -473,7 +473,7 @@ const redo = async () => {
           @click="delConfirm"
           :disabled="getSelectedNodes.length === 0"
         >
-          Delete Selected Nodes
+          {{ $t('btns.deleteConfirm') }}
         </button>
       </div>
     </Panel>
@@ -536,7 +536,7 @@ const redo = async () => {
 
 <style scoped>
 .vue-flow :deep(.vue-flow__minimap) {
-  border: 2px solid black;
+  border: 1px solid black;
 }
 
 #additional-control-buttons {

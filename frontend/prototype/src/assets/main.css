@@ -177,7 +177,7 @@ body,
   /* background: #4a5568; */
   width: 175px;
   border: 1px solid black;
-  padding: 3px;
+  padding: 6px;
   align-items: center;
 
   button {
@@ -197,6 +197,13 @@ body,
   color: white;
 }
 
-.panel > button:not(:last-child) {
-  margin-right: 10px;
+.panel {
+  width: 800px;
+  button:not(:last-child) {
+    margin-right: 10px;
+  }
+}
+
+.basic-flow .vue-flow__node.selected {
+  box-shadow: 0 0 0 1px black;
 }
