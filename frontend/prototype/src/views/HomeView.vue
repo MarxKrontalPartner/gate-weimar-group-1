@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ConnectionMode, VueFlow, useVueFlow, Panel, type Node, type Edge } from '@vue-flow/core'
+import { ref, watch, nextTick, inject, type Ref } from 'vue'
+import {
+  ConnectionMode,
+  VueFlow,
+  useVueFlow,
+  Panel,
+  type Edge,
+  type FlowExportObject,
+} from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { ControlButton, Controls } from '@vue-flow/controls'
+import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import { initialEdges, initialNodes } from '@/assets/initial-flow.ts'
-import CustomIcon from '../components/CustomIcon.vue'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
@@ -19,15 +25,25 @@ import { type Payload } from '@/assets/payload.ts'
  * 2. a set of event-hooks to listen to VueFlow events (like `onInit`, `onNodeDragStop`, `onConnect`, etc)
  * 3. the internal state of the VueFlow instance (like `nodes`, `edges`, `viewport`, etc)
  */
-const { onInit, onConnect, addEdges, toObject, fromObject, removeEdges, removeNodes, getOutgoers } =
-  useVueFlow()
+const {
+  onInit,
+  onConnect,
+  addEdges,
+  toObject,
+  fromObject,
+  removeEdges,
+  removeNodes,
+  getOutgoers,
+  getSelectedNodes,
+  setViewport,
+} = useVueFlow()
 
 const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
 
 // our dark mode toggle flag
-const dark = ref(true)
+const dark = inject('isDark') as Ref<boolean>
 
 /**
  * This is a Vue Flow event-hook which can be listened to from anywhere you call the composable, instead of only on the main component
@@ -38,6 +54,7 @@ const dark = ref(true)
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   vueFlowInstance.fitView()
+  addToHistory()
 })
 
 /**
@@ -81,10 +98,6 @@ onConnect((connection) => {
 //   setViewport({ x: 0, y: 0, zoom: 1 })
 // }
 
-function toggleDarkMode() {
-  dark.value = !dark.value
-}
-
 watch(
   dark,
   (newDarkValue) => {
@@ -101,17 +114,7 @@ function removeEdge({ edge }: { edge: Edge }) {
   removeEdges(edge.id)
 }
 
-const nodeToDeleteId = ref('')
-
-function removeNode() {
-  if (nodeToDeleteId.value != '') {
-    removeNodes(nodeToDeleteId.value)
-    nodeToDeleteId.value = ''
-  }
-}
-
-function delConfirm({ node }: { node: Node }) {
-  nodeToDeleteId.value = node.id
+function delConfirm() {
   UIkit.modal('#del-confirm').show()
 }
 
@@ -310,6 +313,119 @@ const uploadJson = (event: Event) => {
     reader.readAsText(file)
   }
 }
+
+window.addEventListener('keydown', (e) => {
+  const isTyping =
+    ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') ||
+    document.activeElement?.classList.contains('monaco-editor') ||
+    document.querySelector('.uk-modal.uk-open')
+
+  if (isTyping) {
+    return
+  }
+
+  if ((e.key === 'Delete' || e.key === 'Del') && getSelectedNodes.value.length > 0) {
+    delConfirm()
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault()
+    undo()
+  } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+    e.preventDefault()
+    redo()
+  }
+})
+
+const deleteSelectedNodes = () => {
+  const selectedNodes = getSelectedNodes.value
+  if (selectedNodes.length > 0) {
+    removeNodes(selectedNodes, true)
+  }
+}
+
+const history = ref<FlowExportObject[]>([])
+const historyIndex = ref(-1)
+const isInternalChange = ref(false)
+
+function debounce(fn: () => void, delay: number) {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return () => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(), delay)
+  }
+}
+
+const addToHistory = () => {
+  if (isInternalChange.value) return
+
+  const currentState = toObject()
+
+  if (historyIndex.value >= 0) {
+    const lastSavedState = history.value[historyIndex.value]
+    if (JSON.stringify(currentState) === JSON.stringify(lastSavedState)) {
+      return
+    }
+  }
+
+  if (historyIndex.value < history.value.length - 1) {
+    history.value = history.value.slice(0, historyIndex.value + 1)
+  }
+
+  history.value.push(structuredClone(currentState))
+  historyIndex.value++
+
+  if (history.value.length > 50) {
+    history.value.shift()
+    historyIndex.value--
+  }
+}
+
+watch([nodes, edges], debounce(addToHistory, 500), { deep: true })
+
+const applyState = async (state: FlowExportObject) => {
+  nodes.value = state.nodes || []
+
+  await nextTick()
+
+  edges.value = state.edges || []
+
+  if (state.viewport) {
+    setViewport(state.viewport)
+  }
+}
+
+const undo = async () => {
+  if (historyIndex.value <= 0 || isInternalChange.value) return
+
+  isInternalChange.value = true
+
+  historyIndex.value--
+  const stateToRestore = history.value[historyIndex.value]
+
+  if (stateToRestore) {
+    await applyState(stateToRestore)
+  }
+
+  setTimeout(() => {
+    isInternalChange.value = false
+  }, 100)
+}
+
+const redo = async () => {
+  if (historyIndex.value >= history.value.length - 1 || isInternalChange.value) return
+
+  isInternalChange.value = true
+
+  historyIndex.value++
+  const stateToRestore = history.value[historyIndex.value]
+
+  if (stateToRestore) {
+    await applyState(stateToRestore)
+  }
+
+  setTimeout(() => {
+    isInternalChange.value = false
+  }, 100)
+}
 </script>
 
 <template>
@@ -322,8 +438,8 @@ const uploadJson = (event: Event) => {
     :min-zoom="0.2"
     :max-zoom="4"
     @edge-double-click="removeEdge"
-    @node-double-click="delConfirm"
     :connection-mode="ConnectionMode.Strict"
+    :delete-key-code="null"
   >
     <Panel position="bottom-center">
       <div class="panel">
@@ -339,7 +455,7 @@ const uploadJson = (event: Event) => {
         </button>
       </div></Panel
     >
-    <Panel position="top-center">
+    <Panel position="top-center" style="margin-top: 75px">
       <div class="panel">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onRun">
           Run
@@ -350,6 +466,14 @@ const uploadJson = (event: Event) => {
         <input id="fileUpload" type="file" accept="application/json" @change="uploadJson" hidden />
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onImport">
           Import
+        </button>
+        <button
+          class="uk-button uk-button-small"
+          id="delete-button"
+          @click="delConfirm"
+          :disabled="getSelectedNodes.length === 0"
+        >
+          Delete Selected Nodes
         </button>
       </div>
     </Panel>
@@ -374,19 +498,33 @@ const uploadJson = (event: Event) => {
 
     <MiniMap node-color="#2b2b32" style="margin-bottom: 55px" />
     <Controls position="bottom-right" style="border: 1px; border-color: black; border-style: solid">
-      <ControlButton @click="toggleDarkMode">
-        <CustomIcon v-if="dark" name="sun" />
-        <CustomIcon v-else name="moon" />
-      </ControlButton>
+      <span
+        title="Undo"
+        uk-icon="reply"
+        id="additional-control-buttons"
+        :style="{ backgroundColor: dark ? '#333333' : 'white' }"
+        @click="undo"
+      ></span>
+      <span
+        title="Redo"
+        uk-icon="forward"
+        id="additional-control-buttons"
+        :style="{ backgroundColor: dark ? '#333333' : 'white' }"
+        @click="redo"
+      ></span>
     </Controls>
   </VueFlow>
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">Delete Node Confirmation</h2>
-      <p>Are you sure you want to delete this node? This action cannot be undone</p>
+      <p>Are you sure you want to delete the selected Nodes?</p>
       <p class="uk-text-right">
         <button class="uk-button uk-cancel-button uk-modal-close" type="button">Cancel</button>
-        <button class="uk-button uk-delete-button uk-modal-close" @click="removeNode" type="button">
+        <button
+          class="uk-button uk-delete-button uk-modal-close"
+          @click="deleteSelectedNodes"
+          type="button"
+        >
           Confirm
         </button>
       </p>
@@ -397,5 +535,38 @@ const uploadJson = (event: Event) => {
 <style scoped>
 .vue-flow :deep(.vue-flow__minimap) {
   border: 2px solid black;
+}
+
+#additional-control-buttons {
+  cursor: pointer;
+  display: flex;
+  width: 15px;
+  background-color: #333333;
+  padding: 5px;
+  border-bottom: 1px solid var(--v-theme-on-surface);
+}
+
+/* Hover effect for dark mode */
+.basic-flow.dark #additional-control-buttons:hover {
+  background-color: #4d4d4d !important;
+}
+
+/* Hover effect for light mode */
+.basic-flow:not(.dark) #additional-control-buttons:hover {
+  background-color: #f4f4f4 !important;
+}
+
+#delete-button {
+  height: 30px;
+  background-color: var(--mkpError);
+  color: white !important;
+}
+
+#delete-button:disabled {
+  background-color: #979494;
+  color: #999;
+  cursor: not-allowed;
+  border-color: #dae0e5;
+  box-shadow: none;
 }
 </style>
