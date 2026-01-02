@@ -207,3 +207,73 @@ body,
 .basic-flow .vue-flow__node.selected {
   box-shadow: 0 0 0 1px black;
 }
+
+/* Pipeline status overlay */
+.pipeline-status {
+  position: fixed;
+  top: 80px;
+  left: 20px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  z-index: 1500;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--white);
+  position: relative;
+}
+
+.status-dot.running {
+  background-color: var(--mkpWarning);
+  animation: blink 1s infinite;
+}
+
+.status-dot.completed {
+  background-color: var(--mkpSuccess);
+}
+
+.status-dot.completed::after {
+  content: '✓';
+}
+
+.status-dot.failed {
+  background-color: var(--mkpError);
+}
+
+.status-dot.failed::after {
+  content: '✕';
+}
+
+/* Blink animation */
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.status-text {
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 420px;
+  overflow-wrap: break-word;
+  text-align: left;
+}

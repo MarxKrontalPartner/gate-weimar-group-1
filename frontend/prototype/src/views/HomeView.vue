@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, inject, type Ref } from 'vue'
+import { ref, watch, onUnmounted, onMounted, nextTick, inject, type Ref } from 'vue'
 import {
   ConnectionMode,
   VueFlow,
@@ -43,6 +43,22 @@ const {
 const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
+
+type PipelineStatus = 'running' | 'completed' | 'failed'
+
+interface PipelineState {
+  id: string
+  status: PipelineStatus
+  message: string
+}
+
+const currentPipeline = ref<PipelineState | null>(null)
+
+let statusTimer: number | null = null
+
+const isRunning = ref(false)
+
+let ws: WebSocket | null = null
 
 const dark = inject('isDark') as Ref<boolean>
 
@@ -116,6 +132,103 @@ function addIntermediateNode() {
   })
 }
 
+const connectWebSocket = () => {
+  if (ws) return
+
+  ws = new WebSocket('/ws/stream')
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data)
+    const { pipeline_id, category, type, data } = msg
+
+    if (!category || !type) {
+      console.warn('Missing category or type in WebSocket message', msg)
+      return
+    }
+
+    switch (category) {
+      case 'lifecycle':
+        handleLifecycleEvent(type, data, pipeline_id)
+        break
+
+      case 'stream':
+        handleStreamEvent()
+        break
+
+      default:
+        console.warn('Unknown event category:', category)
+    }
+  }
+
+  ws.onclose = () => {
+    ws = null
+  }
+}
+
+// --------------------
+// Handlers
+// --------------------
+const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) => {
+  if (!currentPipeline.value || currentPipeline.value.id !== pipeline_id) {
+    // ignore messages for non-running pipeline
+    return
+  }
+
+  switch (type) {
+    case 'segment_started':
+      currentPipeline.value.status = 'running'
+      currentPipeline.value.message = 'Segment started'
+      break
+
+    case 'segment_completed':
+      currentPipeline.value.status = 'running'
+      currentPipeline.value.message = 'Segment completed'
+      break
+
+    case 'completed':
+      currentPipeline.value.status = 'completed'
+      currentPipeline.value.message = 'Pipeline completed'
+      isRunning.value = false
+      break
+
+    case 'failed':
+      currentPipeline.value.status = 'failed'
+      if (typeof data === 'string') {
+        currentPipeline.value.message = data
+      } else {
+        currentPipeline.value.message = 'Pipeline failed'
+      }
+      isRunning.value = false
+      break
+  }
+
+  // Clear any previous timer
+  if (statusTimer) {
+    clearTimeout(statusTimer)
+    statusTimer = null
+  }
+
+  // Hide ONLY when completed or failed (after 5s)
+  if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'failed') {
+    statusTimer = window.setTimeout(() => {
+      currentPipeline.value = null
+    }, 5000)
+  }
+
+  console.log(`[Pipeline ${pipeline_id}]`, currentPipeline.value.message)
+}
+
+const handleStreamEvent = (): void => {
+  // TODO: implement streaming data event handling
+}
+
+const closeWebSocket = () => {
+  if (ws) {
+    ws.close()
+    ws = null
+  }
+}
+
 const createRequest = async () => {
   const obj = toObject()
   let transformations: string[] = []
@@ -129,7 +242,13 @@ const createRequest = async () => {
     return
   }
 
+  // -----------------------------
+  // Generate unique pipeline ID
+  // -----------------------------
+  const pipelineId = crypto.randomUUID()
+
   const tempPayload: Payload = {
+    pipeline_id: pipelineId,
     input_topic: inputNode.data.content,
     output_topic: outputNode.data.content,
     transformations: [],
@@ -175,8 +294,9 @@ const createRequest = async () => {
   // -------------------------
   const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
 
-  payload.forEach((p) => {
-    p.allow_producer = allow_producer
+  // Applied for first payload to avoid multiple producer runs
+  payload.forEach((p, index) => {
+    p.allow_producer = allow_producer && index === 0
   })
 
   console.log('Sending payload:', payload)
@@ -199,7 +319,14 @@ const createRequest = async () => {
 
     const result = await res.json()
     console.log('Backend response:', result)
-    alert('Pipeline started successfully!')
+
+    currentPipeline.value = {
+      id: pipelineId,
+      status: 'running',
+      message: 'Pipeline started',
+    }
+
+    isRunning.value = true
   } catch (err) {
     console.error(err)
     alert('Failed to contact backend.')
@@ -389,6 +516,14 @@ const redo = async () => {
     isInternalChange.value = false
   }, 100)
 }
+
+onMounted(() => {
+  connectWebSocket()
+})
+
+onUnmounted(() => {
+  closeWebSocket()
+})
 </script>
 
 <template>
@@ -420,7 +555,12 @@ const redo = async () => {
     >
     <Panel position="top-center" style="margin-top: 75px">
       <div class="panel">
-        <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onRun">
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="onRun"
+          :disabled="isRunning"
+        >
           {{ $t('btns.run') }}
         </button>
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="onExport">
@@ -477,6 +617,31 @@ const redo = async () => {
       ></span>
     </Controls>
   </VueFlow>
+  <div
+    v-if="currentPipeline && currentPipeline.status"
+    class="pipeline-status uk-card uk-card-default uk-card-small"
+  >
+    <div class="status-content">
+      <span
+        class="status-dot"
+        :class="{
+          running: currentPipeline.status === 'running',
+          completed: currentPipeline.status === 'completed',
+          failed: currentPipeline.status === 'failed',
+        }"
+      ></span>
+
+      <span class="status-text">
+        {{
+          $t('text.pipeline.label') +
+          ' ' +
+          currentPipeline.id +
+          ' ' +
+          $t(`text.pipeline.status.${currentPipeline.status}`)
+        }}
+      </span>
+    </div>
+  </div>
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>

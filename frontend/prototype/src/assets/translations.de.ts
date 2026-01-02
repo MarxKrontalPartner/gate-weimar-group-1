@@ -17,5 +17,13 @@ export const TranslationsDE = {
       warning: 'Möchten Sie die ausgewählten Knoten wirklich löschen?',
     },
     runAlertError: 'Grafik nicht verbunden',
+    pipeline: {
+      label: 'Pipeline',
+      status: {
+        running: 'läuft',
+        completed: 'abgeschlossen',
+        failed: 'fehlgeschlagen',
+      },
+    },
   },
 }

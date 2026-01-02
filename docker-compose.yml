@@ -1,4 +1,4 @@
-name: pipeline-backend-lite
+name: pipeline-orchestrator
 networks:
   redpanda_network:
     driver: bridge
@@ -56,38 +56,62 @@ services:
     depends_on:
       - redpanda
 
-  
-  pipeline-backend:
-    build: ./backend/prototype/api                          
-    image: my-api-image:latest   
+  # --- BACKEND ---
+  backend:
+    build:
+      context: ./backend/prototype
+      dockerfile: manager/Dockerfile
+    image: pipeline-orchestrator-backend:0.1.0
     container_name: pipeline_backend
-    ports:
-      - "8000:8000"                    
     networks:
       - redpanda_network
+    ports:
+      - "8000:8000"
     volumes:
-      # IMPORTANT: This gives the container permission to spawn other containers
-      - /var/run/docker.sock:/var/run/docker.sock 
-      - ./backend/prototype/worker:/worker_code
+      # allows manager to spawn worker/producer containers
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - WORKER_IMAGE_NAME=my-worker-image:latest
-      - DOCKER_NETWORK_NAME=pipeline-backend-lite_redpanda_network
       - BROKER_ADDRESS=redpanda:9092
+      - DOCKER_NETWORK_NAME=pipeline-orchestrator_redpanda_network
+      - WORKER_IMAGE_NAME=pipeline-orchestrator-worker:0.1.0
+      - PRODUCER_IMAGE_NAME=pipeline-orchestrator-producer:0.1.0
+      - FASTAPI_EVENT_ENDPOINT=http://backend:8000/stream/event
     depends_on:
-      - redpanda  
+      - redpanda
 
   # ------------- FRONTEND -------------
   frontend:
     build:
-      context: ../frontend/prototype
+      context: ./frontend/prototype
       dockerfile: Dockerfile
+    image: pipeline-orchestrator-frontend:0.1.0
     container_name: pipeline_frontend
     ports:
-      - "5173:5173"   # matches the dev server port
+      - "5173:5173"  
     depends_on:
-      - pipeline-backend
+      - backend
     networks:
       - redpanda_network
     volumes:
-      - ../../../frontend/prototype:/app  # mount code for hot reload
-      - /app/node_modules                # prevent node_modules overwrite
+      - ./frontend/prototype:/app  
+      - /app/node_modules          # prevent node_modules overwrite
+  
+  # ------------- WORKER IMAGE -------------
+  worker:
+    build:
+      context: ./backend/prototype
+      dockerfile: worker/Dockerfile
+    image: pipeline-orchestrator-worker:0.1.0
+    networks:
+      - redpanda_network
+    profiles: ["build-only"]
+  
+  # ------------- PRODUCER IMAGE -------------
+  producer:
+    build:
+      context: ./backend/prototype
+      dockerfile: producer/Dockerfile
+    image: pipeline-orchestrator-producer:0.1.0
+    networks:
+      - redpanda_network
+    profiles: ["build-only"]

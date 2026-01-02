@@ -6,8 +6,7 @@ from datetime import datetime, timezone
 from quixstreams import Application
 from quixstreams.models.messages import KafkaMessage
 
-
-from logger import get_logger
+from shared.logger import get_logger
 import os
 
 
