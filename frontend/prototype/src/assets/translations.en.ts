@@ -17,5 +17,13 @@ export const TranslationsEN = {
       warning: 'Are you sure you want to delete the selected Nodes?',
     },
     runAlertError: 'Graph not connected',
+    pipeline: {
+      label: 'Pipeline',
+      status: {
+        running: 'running',
+        completed: 'completed',
+        failed: 'failed',
+      },
+    },
   },
 }
