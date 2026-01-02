@@ -1,6 +1,6 @@
 # Gate Weimar Group 1 Project
 
-This project consists of a **Vue 3 frontend** and a **Python FastAPI backend** with QuixStreams and Redpanda. The entire application can now be run using **Docker Compose**, simplifying setup and development.
+This project is a modern data pipeline orchestrator with a **Vue 3 frontend** and a **Python FastAPI backend**. It leverages Redpanda (Kafka-compatible), QuixStreams, and Docker for dynamic, scalable streaming workflows. The entire stack is managed via **Docker Compose** for easy setup and development.
 
 ---
 
@@ -28,7 +28,7 @@ This project consists of a **Vue 3 frontend** and a **Python FastAPI backend** w
 
 ```bash
 git clone https://github.com/MarxKrontalPartner/gate-weimar-group-1.git
-cd gate-weimar-group-1/backend/drafts/pipeline-backend-lite
+cd gate-weimar-group-1/
 ```
 
 ---
@@ -39,13 +39,14 @@ The Docker Compose setup includes:
 
 - **Redpanda** (Kafka-compatible streaming platform)
 - **Redpanda Console**
-- **Backend (FastAPI + QuixStreams)**
-- **Frontend (Vue 3 dev server with hot reload)**
+- **Backend (FastAPI + Docker SDK + QuixStreams)**
+- **Frontend (Vue 3 + Vite dev server)**
 
-Start all services:
+To build all images (build-only for worker/producer) and start all build services:
 
 ```bash
-docker compose up --build
+docker compose --profile build-only build
+docker compose up -d --build
 ```
 
 ---
@@ -68,51 +69,55 @@ This stops all containers and removes networks created by Docker Compose.
 
 ---
 
-## Frontend Development
+## Frontend Overview
 
-The frontend is built with **Vue 3 + Vite** and runs in development mode with hot reload.
+The frontend is a Vue 3 + Vite application for visually designing, running, and monitoring data pipelines.
 
-- Node version inside container: **>= 20.19** (required for Vite 5)
-- Port exposed: **5173**
+**Features:**
+- Drag-and-drop pipeline graph editor
+- Code editor for Python transformations
+- Real-time status/logs via WebSocket
+- Multi-language UI (EN/DE)
 
-No manual `npm install` is required inside Docker — dependencies are installed during build.
+**Development:**
+- Node.js 22+ required (containerized)
+- Port: 5173
+- Hot reload enabled
 
-To run the frontend outside Docker (optional):
-
+To run the frontend outside Docker (for faster dev):
 ```bash
-cd ../../../frontend/prototype
+cd frontend/prototype
 npm install
 npm run dev -- --host 0.0.0.0
 ```
 
 ---
 
-## Backend Development
+## Backend Overview
 
-The backend runs **FastAPI + QuixStreams** in Docker. Logs are streamed to your terminal.
+The backend is a modular FastAPI orchestration engine for data streaming pipelines. It uses Redpanda (Kafka-compatible), QuixStreams, and Docker to dynamically spawn worker and producer containers for each pipeline segment.
 
-- FastAPI server port: **8000**
-- The backend depends on Redpanda to start correctly; Docker Compose ensures startup order.
+**Features:**
+- Manager service receives pipeline definitions and spawns containers for each segment
+- Worker containers execute user-defined Python transformations
+- Producer containers simulate or ingest data into Kafka topics
+- Shared logging and event modules for all backend services
 
-Dockerfile configuration:
+**Tech Stack:**
+- FastAPI, Docker SDK, QuixStreams, Python 3.11
+- All services built as separate images and orchestrated via Docker Compose
 
-```dockerfile
-FROM python:3.11-slim
-ENV PYTHONUNBUFFERED=1
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-```
-
-- `--reload` (not included in current version) would allow automatic reload during development when Python files change.
+**Development:**
+- FastAPI server port: 8000
+- Source code mounted for live reload
+- Dynamic containers built with `build-only` profile
 
 ---
 
 ## Notes
 
-- The frontend container uses **Node.js 20** for Vite compatibility.
-- The backend container uses **Python 3.11-slim**.
-- Make sure Docker has enough resources for Redpanda, as it can be resource-intensive.
-- For development, you can mount source code to enable live reload for both frontend and backend.
+- The frontend container uses **Node.js 22** for Vite compatibility.
+- The backend containers use **Python 3.11-slim**.
+- Redpanda is resource-intensive; ensure Docker has sufficient resources.
+- Source code is mounted for live reload in development.
+- Worker/producer containers are spawned dynamically by the backend manager.
