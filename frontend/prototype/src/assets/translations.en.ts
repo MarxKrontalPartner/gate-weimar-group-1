@@ -35,8 +35,8 @@ export const TranslationsEN = {
       runtime: 'Pipeline Runtime (seconds)',
     },
     validation: {
-      runtimeError: 'Pipeline Runtime must be at least 5 seconds',
-      channelsError: 'Number of channels must be a positive number',
+      runtimeError: 'Pipeline runtime must be a positive integer and at least 5 seconds',
+      channelsError: 'Number of channels must be a positive integer',
       frequencyError: 'Frequency must be a positive number',
     },
   },

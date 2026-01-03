@@ -58,8 +58,6 @@ let statusTimer: number | null = null
 
 const isRunning = ref(false)
 
-const showRunModal = ref(false)
-
 const runForm = reactive({
   allowProducer: false,
   n_channels: 10,
@@ -141,28 +139,18 @@ function addIntermediateNode() {
   })
 }
 
-const openRunModal = () => {
-  showRunModal.value = true
-  UIkit.modal('#run-pipeline-modal').show()
-}
-
-const closeRunModal = () => {
-  showRunModal.value = false
-  UIkit.modal('#run-pipeline-modal')?.hide()
-}
-
 const validateRunForm = () => {
-  if (!runForm.runtime || runForm.runtime < 5) {
-    UIkit.notification({ message: t('text.validation.runtimeError'), status: 'danger' })
+  if (runForm.runtime == null || runForm.runtime < 5 || !Number.isInteger(runForm.runtime)) {
+    alert(t('text.validation.runtimeError'))
     return false
   }
   if (runForm.allowProducer) {
-    if (!runForm.n_channels || runForm.n_channels <= 0) {
-      UIkit.notification({ message: t('text.validation.channelsError'), status: 'danger' })
+    if (runForm.n_channels == null || runForm.n_channels <= 0 || !Number.isInteger(runForm.n_channels)) {
+      alert(t('text.validation.channelsError'))
       return false
     }
-    if (!runForm.frequency || runForm.frequency <= 0) {
-      UIkit.notification({ message: t('text.validation.frequencyError'), status: 'danger' })
+    if (runForm.frequency == null || runForm.frequency <= 0) {
+      alert(t('text.validation.frequencyError'))
       return false
     }
   }
@@ -268,6 +256,7 @@ const closeWebSocket = () => {
 
 const createRequest = async () => {
   if (!validateRunForm()) return
+  UIkit.modal('#run-pipeline-modal')?.hide()
 
   const obj = toObject()
   let transformations: string[] = []
@@ -291,13 +280,14 @@ const createRequest = async () => {
     input_topic: inputNode.data.content,
     output_topic: outputNode.data.content,
     transformations: [],
-    allow_producer: runForm.allowProducer,
+    allow_producer: false,
     n_channels: runForm.n_channels,
     frequency: runForm.frequency,
     runtime: runForm.runtime,
   }
 
   let node = inputNode
+  let isFirstPayload = true
 
   while (true) {
     const connectedNode = getOutgoers(node)[0]
@@ -307,11 +297,13 @@ const createRequest = async () => {
         //separate the requests
         tempPayload.transformations = transformations
         tempPayload.output_topic = connectedNode.data.content
+        tempPayload.allow_producer = runForm.allowProducer && isFirstPayload
         payload.push({ ...tempPayload })
 
         tempPayload.input_topic = connectedNode.data.content
         tempPayload.output_topic = outputNode.data.content
         transformations = []
+        isFirstPayload = false
       } else {
         transformations.push(connectedNode.data.code)
       }
@@ -324,18 +316,14 @@ const createRequest = async () => {
         return
       }
       tempPayload.transformations = transformations
+      tempPayload.allow_producer = runForm.allowProducer && isFirstPayload
       payload.push({ ...tempPayload })
       break
     }
   }
 
-  if (runForm.allowProducer) {
-    payload.forEach((p, index) => {
-      p.allow_producer = index === 0
-    })
-  }
-
   console.log('Sending payload:', payload)
+  isRunning.value = true
 
   // ----------------------------------------
   // POST to FastAPI /start
@@ -348,8 +336,8 @@ const createRequest = async () => {
     })
 
     if (!res.ok) {
-      const msg = await res.text()
-      alert('Backend error: ' + msg)
+      alert('Failed to start pipeline (API Connection Error).')
+      isRunning.value = false
       return
     }
 
@@ -361,21 +349,11 @@ const createRequest = async () => {
       status: 'running',
       message: 'Pipeline started',
     }
-
-    isRunning.value = true
-    closeRunModal()
   } catch (err) {
     console.error(err)
     alert('Failed to contact backend.')
+    isRunning.value = false
   }
-}
-
-const onRun = () => {
-  openRunModal()
-}
-
-const onCancel = () => {
-  closeRunModal()
 }
 
 const onExport = () => {
@@ -581,7 +559,7 @@ onUnmounted(() => {
     :delete-key-code="null"
   >
     <Panel position="bottom-center">
-      <div class="panel">
+      <div class="panel button-container">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
           {{ $t('btns.addTransformationNode') }}
         </button>
@@ -595,11 +573,11 @@ onUnmounted(() => {
       </div></Panel
     >
     <Panel position="top-center" style="margin-top: 75px">
-      <div class="panel">
+      <div class="panel button-container">
         <button
           class="uk-button uk-button-primary uk-button-small"
           type="button"
-          @click="onRun"
+          uk-toggle="target: #run-pipeline-modal"
           :disabled="isRunning"
         >
           {{ $t('btns.run') }}
@@ -686,15 +664,15 @@ onUnmounted(() => {
   </div>
   <!-- Deletion Confirmation -->
   <div id="del-confirm" uk-modal>
-    <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
+    <div class="uk-modal-dialog button-container uk-modal-body">
       <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>
       <p>{{ $t('text.nodeDeleteConfirm.warning') }}</p>
       <p class="uk-text-right">
-        <button class="uk-button uk-cancel-button uk-modal-close" type="button">
+        <button class="uk-button uk-button-small uk-cancel-button uk-modal-close" type="button">
           {{ $t('btns.cancel') }}
         </button>
         <button
-          class="uk-button uk-delete-button uk-modal-close"
+          class="uk-button uk-button-small uk-delete-button uk-modal-close"
           @click="deleteSelectedNodes"
           type="button"
         >
@@ -705,7 +683,7 @@ onUnmounted(() => {
   </div>
   <!-- Run Pipeline Modal -->
   <div id="run-pipeline-modal" uk-modal="esc-close: false; bg-close: false">
-    <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
+    <div class="uk-modal-dialog button-container uk-modal-body">
       <h2 class="uk-modal-title">
         {{ $t('text.runPipeline.title') }}
       </h2>
@@ -745,12 +723,12 @@ onUnmounted(() => {
       </div>
 
       <p class="uk-text-right">
-        <button class="uk-button uk-cancel-button uk-modal-close" type="button" @click="onCancel">
+        <button class="uk-button uk-button-small uk-cancel-button uk-modal-close" type="button">
           {{ $t('btns.cancel') }}
         </button>
 
         <button
-          class="uk-button uk-button-primary uk-run-pipeline-button uk-margin-small-left"
+          class="uk-button uk-button-small uk-button-primary"
           type="button"
           @click="createRequest"
         >
