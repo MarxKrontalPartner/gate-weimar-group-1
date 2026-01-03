@@ -145,7 +145,11 @@ const validateRunForm = () => {
     return false
   }
   if (runForm.allowProducer) {
-    if (runForm.n_channels == null || runForm.n_channels <= 0 || !Number.isInteger(runForm.n_channels)) {
+    if (
+      runForm.n_channels == null ||
+      runForm.n_channels <= 0 ||
+      !Number.isInteger(runForm.n_channels)
+    ) {
       alert(t('text.validation.channelsError'))
       return false
     }
