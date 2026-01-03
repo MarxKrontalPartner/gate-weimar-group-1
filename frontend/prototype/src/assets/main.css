@@ -30,6 +30,7 @@
 
 .uk-modal-dialog {
   background-color: #ffffff !important;
+  border-radius: 10px;
 }
 
 .uk-modal-title {
@@ -52,6 +53,7 @@ body.dark-mode .uk-modal-title {
 body.dark-mode .uk-modal-dialog {
   background-color: #4b4b5e !important;
   color: #f0f0f0;
+  border-radius: 10px;
 }
 
 .uk-navbar-container {
@@ -66,19 +68,16 @@ body.dark-mode .uk-modal-dialog {
     0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
+.uk-button{
+  border-radius: 3px !important;
+}
+
 .uk-cancel-button {
-  border-radius: 5px !important;
-  width: 150px !important;
-  height: 45px !important;
-  margin-right: 10px !important;
   background-color: var(--mkpLightenGrey1) !important;
   color: var(--white) !important;
 }
 
 .uk-delete-button {
-  border-radius: 5px !important;
-  width: 150px !important;
-  height: 45px !important;
   background-color: var(--mkpError) !important;
   color: var(--white) !important;
 }
@@ -86,20 +85,6 @@ body.dark-mode .uk-modal-dialog {
 .uk-confirm-button {
   background-color: var(--mkpSuccess) !important;
   color: var(--white) !important;
-}
-
-.uk-save-button {
-  border-radius: 5px !important;
-  background-color: var(--mkpInfo) !important;
-  color: var(--white) !important;
-}
-
-.uk-run-pipeline-button {
-  border-radius: 5px !important;
-  min-width: 200px !important;
-  height: 45px !important;
-  padding: 0 16px !important;
-  margin-right: 10px !important;
 }
 
 * {
@@ -198,7 +183,6 @@ body,
 
   button {
     margin-top: 4%;
-    width: 50%;
   }
 }
 
@@ -209,15 +193,18 @@ body,
   background: #4b4b5e;
 }
 
+.button-container {
+  button:not(:last-child) {
+    margin-right: 10px;
+  }
+}
+
 .uk-modal-title {
   color: white;
 }
 
 .panel {
   width: 800px;
-  button:not(:last-child) {
-    margin-right: 10px;
-  }
 }
 
 .basic-flow .vue-flow__node.selected {
