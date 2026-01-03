@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, onMounted, nextTick, inject, type Ref } from 'vue'
+import { ref, watch, onUnmounted, onMounted, reactive, nextTick, inject, type Ref } from 'vue'
 import {
   ConnectionMode,
   VueFlow,
@@ -57,6 +57,15 @@ const currentPipeline = ref<PipelineState | null>(null)
 let statusTimer: number | null = null
 
 const isRunning = ref(false)
+
+const showRunModal = ref(false)
+
+const runForm = reactive({
+  allowProducer: false,
+  n_channels: 10,
+  frequency: 1,
+  runtime: 120,
+})
 
 let ws: WebSocket | null = null
 
@@ -130,6 +139,34 @@ function addIntermediateNode() {
     type: 'custom-intermediate',
     data: { content: 'Intermediate Topic' },
   })
+}
+
+const openRunModal = () => {
+  showRunModal.value = true
+  UIkit.modal('#run-pipeline-modal').show()
+}
+
+const closeRunModal = () => {
+  showRunModal.value = false
+  UIkit.modal('#run-pipeline-modal')?.hide()
+}
+
+const validateRunForm = () => {
+  if (!runForm.runtime || runForm.runtime < 5) {
+    UIkit.notification({ message: t('text.validation.runtimeError'), status: 'danger' })
+    return false
+  }
+  if (runForm.allowProducer) {
+    if (!runForm.n_channels || runForm.n_channels <= 0) {
+      UIkit.notification({ message: t('text.validation.channelsError'), status: 'danger' })
+      return false
+    }
+    if (!runForm.frequency || runForm.frequency <= 0) {
+      UIkit.notification({ message: t('text.validation.frequencyError'), status: 'danger' })
+      return false
+    }
+  }
+  return true
 }
 
 const connectWebSocket = () => {
@@ -230,6 +267,8 @@ const closeWebSocket = () => {
 }
 
 const createRequest = async () => {
+  if (!validateRunForm()) return
+
   const obj = toObject()
   let transformations: string[] = []
   const payload: Payload[] = []
@@ -252,9 +291,10 @@ const createRequest = async () => {
     input_topic: inputNode.data.content,
     output_topic: outputNode.data.content,
     transformations: [],
-    allow_producer: false,
-    n_channels: 10,
-    frequency: 1,
+    allow_producer: runForm.allowProducer,
+    n_channels: runForm.n_channels,
+    frequency: runForm.frequency,
+    runtime: runForm.runtime,
   }
 
   let node = inputNode
@@ -289,15 +329,11 @@ const createRequest = async () => {
     }
   }
 
-  // -------------------------
-  // Ask user whether to allow producer
-  // -------------------------
-  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
-
-  // Applied for first payload to avoid multiple producer runs
-  payload.forEach((p, index) => {
-    p.allow_producer = allow_producer && index === 0
-  })
+  if (runForm.allowProducer) {
+    payload.forEach((p, index) => {
+      p.allow_producer = index === 0
+    })
+  }
 
   console.log('Sending payload:', payload)
 
@@ -327,6 +363,7 @@ const createRequest = async () => {
     }
 
     isRunning.value = true
+    closeRunModal()
   } catch (err) {
     console.error(err)
     alert('Failed to contact backend.')
@@ -334,7 +371,11 @@ const createRequest = async () => {
 }
 
 const onRun = () => {
-  createRequest()
+  openRunModal()
+}
+
+const onCancel = () => {
+  closeRunModal()
 }
 
 const onExport = () => {
@@ -617,6 +658,7 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
+  <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"
@@ -642,6 +684,7 @@ onUnmounted(() => {
       </span>
     </div>
   </div>
+  <!-- Deletion Confirmation -->
   <div id="del-confirm" uk-modal>
     <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
       <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>
@@ -656,6 +699,62 @@ onUnmounted(() => {
           type="button"
         >
           {{ $t('btns.confirm') }}
+        </button>
+      </p>
+    </div>
+  </div>
+  <!-- Run Pipeline Modal -->
+  <div id="run-pipeline-modal" uk-modal="esc-close: false; bg-close: false">
+    <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
+      <h2 class="uk-modal-title">
+        {{ $t('text.runPipeline.title') }}
+      </h2>
+
+      <p>
+        {{ $t('text.runPipeline.description') }}
+      </p>
+
+      <div class="uk-margin">
+        <label>
+          <input type="checkbox" v-model="runForm.allowProducer" class="uk-switch" />
+          {{ $t('text.runPipeline.allowProducer') }}
+        </label>
+      </div>
+
+      <div v-if="runForm.allowProducer">
+        <div class="uk-margin">
+          <h4>{{ $t('text.runPipeline.nChannels') }}</h4>
+          <input type="number" v-model.number="runForm.n_channels" class="uk-input" min="1" />
+        </div>
+
+        <div class="uk-margin">
+          <h4>{{ $t('text.runPipeline.frequency') }}</h4>
+          <input
+            type="number"
+            v-model.number="runForm.frequency"
+            class="uk-input"
+            min="0.1"
+            step="0.1"
+          />
+        </div>
+      </div>
+
+      <div class="uk-margin">
+        <h4>{{ $t('text.runPipeline.runtime') }}</h4>
+        <input type="number" v-model.number="runForm.runtime" class="uk-input" min="5" required />
+      </div>
+
+      <p class="uk-text-right">
+        <button class="uk-button uk-cancel-button uk-modal-close" type="button" @click="onCancel">
+          {{ $t('btns.cancel') }}
+        </button>
+
+        <button
+          class="uk-button uk-button-primary uk-run-pipeline-button uk-margin-small-left"
+          type="button"
+          @click="createRequest"
+        >
+          {{ $t('btns.runPipeline') }}
         </button>
       </p>
     </div>

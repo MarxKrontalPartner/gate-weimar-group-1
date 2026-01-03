@@ -36,6 +36,14 @@
   color: black !important;
 }
 
+.uk-modal-dialog h4 {
+  color: black !important;
+}
+
+body.dark-mode .uk-modal-dialog h4 {
+  color: white !important;
+}
+
 body.dark-mode .uk-modal-title {
   color: white !important;
 }
@@ -84,6 +92,14 @@ body.dark-mode .uk-modal-dialog {
   border-radius: 5px !important;
   background-color: var(--mkpInfo) !important;
   color: var(--white) !important;
+}
+
+.uk-run-pipeline-button {
+  border-radius: 5px !important;
+  min-width: 200px !important;
+  height: 45px !important;
+  padding: 0 16px !important;
+  margin-right: 10px !important;
 }
 
 * {

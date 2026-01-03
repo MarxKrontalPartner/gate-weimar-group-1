@@ -6,4 +6,5 @@ export interface Payload {
   allow_producer: boolean
   n_channels: number
   frequency: number
+  runtime: number
 }
