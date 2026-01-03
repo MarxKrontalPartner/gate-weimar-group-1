@@ -189,9 +189,6 @@ body,
 .input-nodes {
   text-align: center;
 }
-.uk-modal-dialog {
-  background: #4b4b5e;
-}
 
 .button-container {
   button:not(:last-child) {
