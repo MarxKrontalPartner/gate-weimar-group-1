@@ -6,7 +6,7 @@ from app.api.pipelines import router as pipeline_router
 app = FastAPI()
 
 app.add_middleware(
-    CORSMiddleware,
+    CORSMiddleware,  # ty: ignore[invalid-argument-type]; https://github.com/astral-sh/ty/issues/1635
     allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],

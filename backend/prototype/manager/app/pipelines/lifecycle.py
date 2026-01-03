@@ -11,7 +11,7 @@ from shared.events import emit_event
 
 logger = get_logger("Lifecycle")
 
-def stop_and_remove_container(container, name: str = None):
+def stop_and_remove_container(container, name: str | None = None):
     """
     Safely stop and remove a Docker container.
 
