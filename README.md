@@ -14,6 +14,7 @@ This project is a modern data pipeline orchestrator with a **Vue 3 frontend** an
 - [Frontend Development](#frontend-development)
 - [Backend Development](#backend-development)
 - [Notes](#notes)
+- [Project Contributors & Responsibilities](#project-contributors--responsibilities)
 
 ---
 
@@ -121,3 +122,38 @@ The backend is a modular FastAPI orchestration engine for data streaming pipelin
 - Redpanda is resource-intensive; ensure Docker has sufficient resources.
 - Source code is mounted for live reload in development.
 - Worker/producer containers are spawned dynamically by the backend manager.
+
+---
+
+## Project Contributors & Responsibilities
+
+- **Sara**  
+  - Backend integration, Producer logic, Docker setup
+  - Frontend: Pipeline status monitoring, pipeline Run configuration
+
+- **Amina**  
+  - Backend logic for applying transformations
+  - Worker logic, FastAPI integration, Docker setup
+
+- **Ananthu**  
+  - Frontend prototype and core functionality on the home page
+  - Added support for intermediate node  
+  - Developed translate option (English ↔ German)
+
+- **Xavier**  
+  - Frontend styling
+  - Node and edge deletion confirmation
+  - Layouting, undo/redo functionality
+
+- **Victor**     
+  - Implementing test area under "Edit code" button for sandboxed code 
+    testing using custom input (WIP)
+  - Added output display for test results, error logging, and helpful debug comments
+
+- **Thamarai**  
+  - Streaming data display on the UI
+  - Creating button to display results of current pipeline run
+
+**Contact:**  
+- For backend issues: Sara, Amina  
+- For frontend issues: Ananthu, Xavier, Victor, Thamarai
