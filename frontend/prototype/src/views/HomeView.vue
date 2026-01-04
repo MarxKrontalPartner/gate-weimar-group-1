@@ -43,6 +43,17 @@ const {
 const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
+interface StreamMessage {
+  topic?: string
+  data: unknown
+  timestamp: number
+}
+
+const showIoPanel = ref<boolean>(false)
+
+const inputMessages = ref<StreamMessage[]>([])
+const outputMessages = ref<StreamMessage[]>([])
+
 
 type PipelineStatus = 'running' | 'completed' | 'failed'
 
@@ -139,7 +150,10 @@ const connectWebSocket = () => {
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data)
-    const { pipeline_id, category, type, data } = msg
+    const { pipeline_id, category, type, data, topic } = msg
+
+     
+
 
     if (!category || !type) {
       console.warn('Missing category or type in WebSocket message', msg)
@@ -152,7 +166,7 @@ const connectWebSocket = () => {
         break
 
       case 'stream':
-        handleStreamEvent()
+        handleStreamEvent(type, data, pipeline_id, topic)
         break
 
       default:
@@ -218,9 +232,39 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
   console.log(`[Pipeline ${pipeline_id}]`, currentPipeline.value.message)
 }
 
-const handleStreamEvent = (): void => {
-  // TODO: implement streaming data event handling
+const handleStreamEvent = (
+  type: string,
+  data: unknown,
+  pipeline_id: string,
+  topic?: string,
+): void => {
+  if (!currentPipeline.value || currentPipeline.value.id !== pipeline_id) {
+    return
+  }
+
+  const message: StreamMessage = {
+    topic,
+    data,
+    timestamp: Date.now(),
+  }
+
+  if (type === 'input') {
+    inputMessages.value.push(message)
+
+    if (inputMessages.value.length > 50) {
+      inputMessages.value.shift()
+    }
+  }
+
+  if (type === 'output') {
+    outputMessages.value.push(message)
+
+    if (outputMessages.value.length > 50) {
+      outputMessages.value.shift()
+    }
+  }
 }
+
 
 const closeWebSocket = () => {
   if (ws) {
@@ -516,6 +560,33 @@ const redo = async () => {
     isInternalChange.value = false
   }, 100)
 }
+const panelPosition = ref({ x: 100, y: 100 })
+let isDragging = false
+let offsetX = 0
+let offsetY = 0
+
+const startDrag = (event: MouseEvent): void => {
+  isDragging = true
+  offsetX = event.clientX - panelPosition.value.x
+  offsetY = event.clientY - panelPosition.value.y
+
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDrag)
+}
+
+const onDrag = (event: MouseEvent): void => {
+  if (!isDragging) return
+
+  panelPosition.value.x = event.clientX - offsetX
+  panelPosition.value.y = event.clientY - offsetY
+}
+
+const stopDrag = (): void => {
+  isDragging = false
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDrag)
+}
+
 
 onMounted(() => {
   connectWebSocket()
@@ -550,6 +621,13 @@ onUnmounted(() => {
           @click="addIntermediateNode"
         >
           {{ $t('btns.addIntermediateNode') }}
+        </button>
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          @click="showIoPanel = !showIoPanel"
+        >
+        Input / Output Panel
         </button>
       </div></Panel
     >
@@ -617,6 +695,46 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
+  <div
+  v-if="showIoPanel"
+  :style="{
+    position: 'fixed',
+    left: panelPosition.x + 'px',
+    top: panelPosition.y + 'px',
+    width: '650px',
+    height: '420px',
+    display: 'flex',
+    gap: '10px',
+    background: '#ffffff',
+    padding: '10px',
+    fontFamily: 'monospace',
+    zIndex: 100000,
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+  }"
+>
+  <!-- HEADER (DRAG HANDLE) -->
+  <div
+    style="position: absolute; top: -28px; left: 0; cursor: move;"
+    @mousedown="startDrag"
+  >
+    <strong>↕ Stream Inspector</strong>
+  </div>
+
+  <!-- INPUT -->
+  <div style="flex: 1; overflow: auto; border-right: 1px solid #ddd;">
+    <h4 style="color: #2e7d32;">Input</h4>
+    <pre>{{ inputMessages.slice(-5) }}</pre>
+  </div>
+
+  <!-- OUTPUT -->
+  <div style="flex: 1; overflow: auto;">
+    <h4 style="color: #1565c0;">Output</h4>
+    <pre>{{ outputMessages.slice(-5) }}</pre>
+  </div>
+</div>
+
   <div
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"
