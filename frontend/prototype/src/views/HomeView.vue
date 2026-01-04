@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, onMounted, nextTick, inject, type Ref } from 'vue'
+import { ref, watch, onUnmounted, onMounted, reactive, nextTick, inject, type Ref } from 'vue'
 import {
   ConnectionMode,
   VueFlow,
@@ -57,6 +57,13 @@ const currentPipeline = ref<PipelineState | null>(null)
 let statusTimer: number | null = null
 
 const isRunning = ref(false)
+
+const runForm = reactive({
+  allowProducer: false,
+  n_channels: 10,
+  frequency: 1,
+  runtime: 120,
+})
 
 let ws: WebSocket | null = null
 
@@ -132,37 +139,81 @@ function addIntermediateNode() {
   })
 }
 
-const connectWebSocket = () => {
-  if (ws) return
-
-  ws = new WebSocket('/ws/stream')
-
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data)
-    const { pipeline_id, category, type, data } = msg
-
-    if (!category || !type) {
-      console.warn('Missing category or type in WebSocket message', msg)
-      return
+const validateRunForm = () => {
+  if (runForm.runtime == null || runForm.runtime < 5 || !Number.isInteger(runForm.runtime)) {
+    alert(t('text.validation.runtimeError'))
+    return false
+  }
+  if (runForm.allowProducer) {
+    if (
+      runForm.n_channels == null ||
+      runForm.n_channels <= 0 ||
+      !Number.isInteger(runForm.n_channels)
+    ) {
+      alert(t('text.validation.channelsError'))
+      return false
     }
-
-    switch (category) {
-      case 'lifecycle':
-        handleLifecycleEvent(type, data, pipeline_id)
-        break
-
-      case 'stream':
-        handleStreamEvent()
-        break
-
-      default:
-        console.warn('Unknown event category:', category)
+    if (runForm.frequency == null || runForm.frequency <= 0) {
+      alert(t('text.validation.frequencyError'))
+      return false
     }
   }
+  return true
+}
 
-  ws.onclose = () => {
-    ws = null
-  }
+const connectWebSocket = (): Promise<boolean> => {
+  if (ws) return Promise.resolve(true)
+
+  return new Promise((resolve) => {
+    ws = new WebSocket('/ws/stream')
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data)
+      const { pipeline_id, category, type, data } = msg
+
+      if (!category || !type) {
+        console.warn('Missing category or type in WebSocket message', msg)
+        return
+      }
+
+      switch (category) {
+        case 'lifecycle':
+          handleLifecycleEvent(type, data, pipeline_id)
+          break
+
+        case 'stream':
+          handleStreamEvent()
+          break
+
+        default:
+          console.warn('Unknown event category:', category)
+      }
+    }
+
+    ws.onopen = () => {
+      console.log('WebSocket connected')
+      resolve(true)
+    }
+
+    ws.onerror = () => {
+      console.warn('WebSocket error')
+      ws = null
+      resolve(false)
+    }
+
+    ws.onclose = () => {
+      console.warn('WebSocket closed')
+      ws = null
+      resolve(false)
+    }
+
+    setTimeout(() => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        ws = null
+        resolve(false)
+      }
+    }, 4000)
+  })
 }
 
 // --------------------
@@ -230,6 +281,9 @@ const closeWebSocket = () => {
 }
 
 const createRequest = async () => {
+  if (!validateRunForm()) return
+  UIkit.modal('#run-pipeline-modal')?.hide()
+
   const obj = toObject()
   let transformations: string[] = []
   const payload: Payload[] = []
@@ -238,7 +292,7 @@ const createRequest = async () => {
   const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
 
   if (!inputNode || !outputNode) {
-    alert('input or output node missing')
+    alert(t('text.missingIO'))
     return
   }
 
@@ -253,8 +307,9 @@ const createRequest = async () => {
     output_topic: outputNode.data.content,
     transformations: [],
     allow_producer: false,
-    n_channels: 10,
-    frequency: 1,
+    n_channels: runForm.n_channels,
+    frequency: runForm.frequency,
+    runtime: runForm.runtime,
   }
 
   let node = inputNode
@@ -280,7 +335,7 @@ const createRequest = async () => {
     } else {
       // check if the last node is the output node ie if the graph is connected
       if (!connectedNode || connectedNode.id !== outputNode?.id) {
-        alert(t('text.runAlertError'))
+        alert(t('text.graphNotConnected'))
         return
       }
       tempPayload.transformations = transformations
@@ -289,17 +344,19 @@ const createRequest = async () => {
     }
   }
 
-  // -------------------------
-  // Ask user whether to allow producer
-  // -------------------------
-  const allow_producer = confirm('Allow producer? OK = True, Cancel = False')
-
-  // Applied for first payload to avoid multiple producer runs
-  payload.forEach((p, index) => {
-    p.allow_producer = allow_producer && index === 0
-  })
+  if (payload?.[0] && runForm.allowProducer) {
+    payload[0].allow_producer = runForm.allowProducer
+  }
 
   console.log('Sending payload:', payload)
+  isRunning.value = true
+
+  // Ensure WebSocket connection
+  if (!ws && !(await connectWebSocket())) {
+    alert(t('text.webSocketError'))
+    isRunning.value = false
+    return
+  }
 
   // ----------------------------------------
   // POST to FastAPI /start
@@ -312,8 +369,8 @@ const createRequest = async () => {
     })
 
     if (!res.ok) {
-      const msg = await res.text()
-      alert('Backend error: ' + msg)
+      alert(t('text.apiConnectionError'))
+      isRunning.value = false
       return
     }
 
@@ -325,16 +382,11 @@ const createRequest = async () => {
       status: 'running',
       message: 'Pipeline started',
     }
-
-    isRunning.value = true
   } catch (err) {
     console.error(err)
-    alert('Failed to contact backend.')
+    alert(t('text.backendContactError'))
+    isRunning.value = false
   }
-}
-
-const onRun = () => {
-  createRequest()
 }
 
 const onExport = () => {
@@ -540,7 +592,7 @@ onUnmounted(() => {
     :delete-key-code="null"
   >
     <Panel position="bottom-center">
-      <div class="panel">
+      <div class="panel button-container">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
           {{ $t('btns.addTransformationNode') }}
         </button>
@@ -554,11 +606,11 @@ onUnmounted(() => {
       </div></Panel
     >
     <Panel position="top-center" style="margin-top: 75px">
-      <div class="panel">
+      <div class="panel button-container">
         <button
           class="uk-button uk-button-primary uk-button-small"
           type="button"
-          @click="onRun"
+          uk-toggle="target: #run-pipeline-modal"
           :disabled="isRunning"
         >
           {{ $t('btns.run') }}
@@ -617,6 +669,7 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
+  <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"
@@ -642,20 +695,77 @@ onUnmounted(() => {
       </span>
     </div>
   </div>
+  <!-- Deletion Confirmation -->
   <div id="del-confirm" uk-modal>
-    <div class="uk-modal-dialog uk-modal-body" style="border-radius: 10px">
+    <div class="uk-modal-dialog button-container uk-modal-body">
       <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>
       <p>{{ $t('text.nodeDeleteConfirm.warning') }}</p>
       <p class="uk-text-right">
-        <button class="uk-button uk-cancel-button uk-modal-close" type="button">
+        <button class="uk-button uk-button-small uk-cancel-button uk-modal-close" type="button">
           {{ $t('btns.cancel') }}
         </button>
         <button
-          class="uk-button uk-delete-button uk-modal-close"
+          class="uk-button uk-button-small uk-delete-button uk-modal-close"
           @click="deleteSelectedNodes"
           type="button"
         >
           {{ $t('btns.confirm') }}
+        </button>
+      </p>
+    </div>
+  </div>
+  <!-- Run Pipeline Modal -->
+  <div id="run-pipeline-modal" uk-modal="esc-close: false; bg-close: false">
+    <div class="uk-modal-dialog button-container uk-modal-body">
+      <h2 class="uk-modal-title">
+        {{ $t('text.runPipeline.title') }}
+      </h2>
+
+      <p>
+        {{ $t('text.runPipeline.description') }}
+      </p>
+
+      <div class="uk-margin">
+        <label>
+          <input type="checkbox" v-model="runForm.allowProducer" class="uk-switch" />
+          {{ $t('text.runPipeline.allowProducer') }}
+        </label>
+      </div>
+
+      <div v-if="runForm.allowProducer">
+        <div class="uk-margin">
+          <h4>{{ $t('text.runPipeline.nChannels') }}</h4>
+          <input type="number" v-model.number="runForm.n_channels" class="uk-input" min="1" />
+        </div>
+
+        <div class="uk-margin">
+          <h4>{{ $t('text.runPipeline.frequency') }}</h4>
+          <input
+            type="number"
+            v-model.number="runForm.frequency"
+            class="uk-input"
+            min="0.1"
+            step="0.1"
+          />
+        </div>
+      </div>
+
+      <div class="uk-margin">
+        <h4>{{ $t('text.runPipeline.runtime') }}</h4>
+        <input type="number" v-model.number="runForm.runtime" class="uk-input" min="5" required />
+      </div>
+
+      <p class="uk-text-right">
+        <button class="uk-button uk-button-small uk-cancel-button uk-modal-close" type="button">
+          {{ $t('btns.cancel') }}
+        </button>
+
+        <button
+          class="uk-button uk-button-small uk-button-primary"
+          type="button"
+          @click="createRequest"
+        >
+          {{ $t('btns.runPipeline') }}
         </button>
       </p>
     </div>

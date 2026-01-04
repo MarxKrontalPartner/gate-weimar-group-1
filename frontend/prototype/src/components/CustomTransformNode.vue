@@ -53,7 +53,7 @@ watch(
       @click="onModalToggle"
       class="uk-button uk-button-primary uk-button-small"
       uk-toggle="target: #modal-example"
-      style="border-radius: 3px; width: auto"
+      type="button"
     >
       {{ $t('btns.editCode') }}
     </button>
@@ -73,7 +73,7 @@ watch(
         <p class="uk-text-right">
           <button
             @click="onSave"
-            class="uk-button uk-modal-close uk-save-button uk-button-small"
+            class="uk-button uk-modal-close uk-button-primary uk-button-small"
             type="button"
           >
             {{ $t('btns.save') }}

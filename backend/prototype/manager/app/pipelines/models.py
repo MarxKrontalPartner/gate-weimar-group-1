@@ -10,6 +10,7 @@ class PipelineInput(BaseModel):
     allow_producer: bool = False
     n_channels: int = 10
     frequency: float = 1.0
+    runtime: int
 
 class PipelineStatus(str, Enum):
     STARTING = "starting"
