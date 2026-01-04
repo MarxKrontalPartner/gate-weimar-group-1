@@ -17,7 +17,12 @@ export const TranslationsEN = {
       title: 'Delete Node Confirmation',
       warning: 'Are you sure you want to delete the selected Nodes?',
     },
-    runAlertError: 'Graph not connected',
+    graphNotConnected: 'Graph not connected',
+    missingIO: 'Input or Output Node missing!',
+    apiConnectionError: 'Failed to start pipeline (API Connection Error).',
+    backendContactError: 'Failed to contact backend.',
+    webSocketError:
+      'Cannot connect to backend or WebSocket. Please restart the backend and try again.',
     pipeline: {
       label: 'Pipeline',
       status: {

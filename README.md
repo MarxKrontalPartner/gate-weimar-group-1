@@ -14,7 +14,6 @@ This project is a modern data pipeline orchestrator with a **Vue 3 frontend** an
 - [Frontend Development](#frontend-development)
 - [Backend Development](#backend-development)
 - [Notes](#notes)
-<!-- - [Project Contributors & Responsibilities](#project-contributors--responsibilities) -->
 - [Contact](#contact)
 
 ---

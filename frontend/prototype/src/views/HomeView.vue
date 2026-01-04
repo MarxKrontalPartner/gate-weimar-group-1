@@ -161,37 +161,59 @@ const validateRunForm = () => {
   return true
 }
 
-const connectWebSocket = () => {
-  if (ws) return
+const connectWebSocket = (): Promise<boolean> => {
+  if (ws) return Promise.resolve(true)
 
-  ws = new WebSocket('/ws/stream')
+  return new Promise((resolve) => {
+    ws = new WebSocket('/ws/stream')
 
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data)
-    const { pipeline_id, category, type, data } = msg
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data)
+      const { pipeline_id, category, type, data } = msg
 
-    if (!category || !type) {
-      console.warn('Missing category or type in WebSocket message', msg)
-      return
+      if (!category || !type) {
+        console.warn('Missing category or type in WebSocket message', msg)
+        return
+      }
+
+      switch (category) {
+        case 'lifecycle':
+          handleLifecycleEvent(type, data, pipeline_id)
+          break
+
+        case 'stream':
+          handleStreamEvent()
+          break
+
+        default:
+          console.warn('Unknown event category:', category)
+      }
     }
 
-    switch (category) {
-      case 'lifecycle':
-        handleLifecycleEvent(type, data, pipeline_id)
-        break
-
-      case 'stream':
-        handleStreamEvent()
-        break
-
-      default:
-        console.warn('Unknown event category:', category)
+    ws.onopen = () => {
+      console.log('WebSocket connected')
+      resolve(true)
     }
-  }
 
-  ws.onclose = () => {
-    ws = null
-  }
+    ws.onerror = () => {
+      console.warn('WebSocket error')
+      ws = null
+      resolve(false)
+    }
+
+    ws.onclose = () => {
+      console.warn('WebSocket closed')
+      ws = null
+      resolve(false)
+    }
+
+    setTimeout(() => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        ws = null
+        resolve(false)
+      }
+    }, 4000)
+  })
 }
 
 // --------------------
@@ -270,7 +292,7 @@ const createRequest = async () => {
   const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
 
   if (!inputNode || !outputNode) {
-    alert('input or output node missing')
+    alert(t('text.missingIO'))
     return
   }
 
@@ -291,7 +313,6 @@ const createRequest = async () => {
   }
 
   let node = inputNode
-  let isFirstPayload = true
 
   while (true) {
     const connectedNode = getOutgoers(node)[0]
@@ -301,13 +322,11 @@ const createRequest = async () => {
         //separate the requests
         tempPayload.transformations = transformations
         tempPayload.output_topic = connectedNode.data.content
-        tempPayload.allow_producer = runForm.allowProducer && isFirstPayload
         payload.push({ ...tempPayload })
 
         tempPayload.input_topic = connectedNode.data.content
         tempPayload.output_topic = outputNode.data.content
         transformations = []
-        isFirstPayload = false
       } else {
         transformations.push(connectedNode.data.code)
       }
@@ -316,18 +335,28 @@ const createRequest = async () => {
     } else {
       // check if the last node is the output node ie if the graph is connected
       if (!connectedNode || connectedNode.id !== outputNode?.id) {
-        alert(t('text.runAlertError'))
+        alert(t('text.graphNotConnected'))
         return
       }
       tempPayload.transformations = transformations
-      tempPayload.allow_producer = runForm.allowProducer && isFirstPayload
       payload.push({ ...tempPayload })
       break
     }
   }
 
+  if (payload?.[0] && runForm.allowProducer) {
+    payload[0].allow_producer = runForm.allowProducer
+  }
+
   console.log('Sending payload:', payload)
   isRunning.value = true
+
+  // Ensure WebSocket connection
+  if (!ws && !(await connectWebSocket())) {
+    alert(t('text.webSocketError'))
+    isRunning.value = false
+    return
+  }
 
   // ----------------------------------------
   // POST to FastAPI /start
@@ -340,7 +369,7 @@ const createRequest = async () => {
     })
 
     if (!res.ok) {
-      alert('Failed to start pipeline (API Connection Error).')
+      alert(t('text.apiConnectionError'))
       isRunning.value = false
       return
     }
@@ -355,7 +384,7 @@ const createRequest = async () => {
     }
   } catch (err) {
     console.error(err)
-    alert('Failed to contact backend.')
+    alert(t('text.backendContactError'))
     isRunning.value = false
   }
 }

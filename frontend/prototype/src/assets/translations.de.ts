@@ -17,7 +17,12 @@ export const TranslationsDE = {
       title: 'Knoten löschen Bestätigung',
       warning: 'Möchten Sie die ausgewählten Knoten wirklich löschen?',
     },
-    runAlertError: 'Grafik nicht verbunden',
+    graphNotConnected: 'Grafik nicht verbunden',
+    missingIO: 'Eingabe- oder Ausgabeknoten fehlt!',
+    apiConnectionError: 'Pipeline konnte nicht gestartet werden (API-Verbindungsfehler).',
+    backendContactError: 'Backend konnte nicht erreicht werden.',
+    webSocketError:
+      'Kann keine Verbindung zum Backend oder WebSocket herstellen. Bitte Backend neu starten und erneut versuchen.',
     pipeline: {
       label: 'Pipeline',
       status: {
