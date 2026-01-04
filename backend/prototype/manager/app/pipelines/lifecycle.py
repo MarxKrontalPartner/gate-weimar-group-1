@@ -11,7 +11,7 @@ from shared.events import emit_event
 
 logger = get_logger("Lifecycle")
 
-def stop_and_remove_container(container, name: str = None):
+def stop_and_remove_container(container, name: str | None = None):
     """
     Safely stop and remove a Docker container.
 
@@ -119,8 +119,8 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
         # -----------------------
         # Container Monitoring
         # -----------------------
-        container_runtime = 120
-        poll_interval = 10
+        container_runtime = pipeline.runtime
+        poll_interval = min(10, max(1, container_runtime // 10)) # Keep polling interval between 1–10 seconds
         elapsed = 0
 
         while elapsed < container_runtime:

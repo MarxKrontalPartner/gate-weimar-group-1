@@ -2,6 +2,7 @@
 from typing import Dict
 from threading import Lock
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from app.pipelines.models import PipelineStatus
 
 
@@ -12,7 +13,7 @@ class PipelineState:
         self.completed_segments = 0
         self.status = PipelineStatus.STARTING
         self.message = "Pipeline initialized"
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(ZoneInfo("Europe/Berlin"))
         self.lock = Lock()
         self._completion_emitted = False
 
@@ -73,7 +74,7 @@ def fail_pipeline(pipeline_id: str, message: str):
     with pipeline.lock:
         if pipeline.status in (PipelineStatus.COMPLETED, PipelineStatus.FAILED):
             return
-        
+
         pipeline.status = PipelineStatus.FAILED
         pipeline.message = message
 

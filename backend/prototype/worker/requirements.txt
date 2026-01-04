@@ -1,2 +1,1 @@
-pydantic>=2.0.0
 quixstreams>=2.4.0
