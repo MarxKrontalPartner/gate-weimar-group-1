@@ -114,7 +114,7 @@ def main():
         app.run()
 
     except Exception as e:
-        logger.error("Worker crashed with fatal error:")
+        logger.error(f"Worker crashed with fatal error: {e}")
         logger.error(traceback.format_exc())
 
 if __name__ == "__main__":
