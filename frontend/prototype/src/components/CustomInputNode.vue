@@ -14,6 +14,19 @@ const onInput = (event: InputEvent) => {
     content: target.value,
   })
 }
+const blockSpace = (e: KeyboardEvent) => {
+  if (e.key === ' ') {
+    e.preventDefault()
+  }
+}
+
+const blockPaste = (e: ClipboardEvent) => {
+  const pasted = e.clipboardData?.getData('text') ?? ''
+
+  if (/\s/.test(pasted)) {
+    e.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -25,6 +38,8 @@ const onInput = (event: InputEvent) => {
       type="text"
       aria-label="Input"
       @input="onInput"
+      @keydown="blockSpace"
+      @paste="blockPaste"
     />
     <Handle type="source" :position="Position.Right" :connectable="1" />
   </div>
