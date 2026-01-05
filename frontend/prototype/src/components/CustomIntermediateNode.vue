@@ -1,32 +1,15 @@
 <script setup lang="ts">
 import { Position, Handle } from '@vue-flow/core'
 import { useVueFlow } from '@vue-flow/core'
+import { createOnInput, blockSpace, blockPaste } from '@/utils/nodeEventHandlers'
 
 const { updateNodeData } = useVueFlow()
-const props = defineProps(['id', 'data'])
+const props = defineProps<{
+  id: string
+  data: { content: string }
+}>()
 
-const onInput = (event: InputEvent) => {
-  const target = event.target as HTMLInputElement | null
-  if (!target) {
-    return
-  }
-  updateNodeData(props.id, {
-    content: target.value,
-  })
-}
-const blockSpace = (e: KeyboardEvent) => {
-  if (e.key === ' ') {
-    e.preventDefault()
-  }
-}
-
-const blockPaste = (e: ClipboardEvent) => {
-  const pasted = e.clipboardData?.getData('text') ?? ''
-
-  if (/\s/.test(pasted)) {
-    e.preventDefault()
-  }
-}
+const onInput = createOnInput(updateNodeData, props.id)
 </script>
 
 <template>
