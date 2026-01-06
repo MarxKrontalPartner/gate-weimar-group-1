@@ -6,6 +6,7 @@ import { useVueFlow } from '@vue-flow/core'
 
 const { updateNodeData } = useVueFlow()
 const showModal = ref(false)
+let lastSavedCode = ''
 const props = defineProps(['id', 'data', 'isDark'])
 
 //props specifically for light/dark mode
@@ -13,6 +14,9 @@ const props = defineProps(['id', 'data', 'isDark'])
 const reactiveData = reactive(props.data)
 
 const onModalToggle = () => {
+  if (!showModal.value) {
+    lastSavedCode = reactiveData.code
+  }
   showModal.value = !showModal.value
 }
 
@@ -20,6 +24,11 @@ const onSave = () => {
   updateNodeData(props.id, {
     code: reactiveData.code,
   })
+  onModalToggle()
+}
+
+const onCancel = () => {
+  reactiveData.code = lastSavedCode
   onModalToggle()
 }
 
@@ -70,7 +79,15 @@ watch(
             :options="editorOptions"
           />
         </div>
-        <p class="uk-text-right">
+        <p class="uk-text-right button-container">
+          <button
+            @click="onCancel"
+            class="uk-button uk-modal-close uk-cancel-button uk-button-small"
+            type="button"
+          >
+            {{ $t('btns.cancel') }}
+          </button>
+
           <button
             @click="onSave"
             class="uk-button uk-modal-close uk-button-primary uk-button-small"
