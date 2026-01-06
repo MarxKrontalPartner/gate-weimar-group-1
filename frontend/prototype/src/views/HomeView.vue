@@ -54,7 +54,6 @@ const showIoPanel = ref<boolean>(false)
 const inputMessages = ref<StreamMessage[]>([])
 const outputMessages = ref<StreamMessage[]>([])
 
-
 type PipelineStatus = 'running' | 'completed' | 'failed'
 
 interface PipelineState {
@@ -175,18 +174,12 @@ const validateRunForm = () => {
 const connectWebSocket = (): Promise<boolean> => {
   if (ws) return Promise.resolve(true)
 
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data)
-    const { pipeline_id, category, type, data, topic } = msg
-
-     
-
   return new Promise((resolve) => {
     ws = new WebSocket('/ws/stream')
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data)
-      const { pipeline_id, category, type, data } = msg
+      const { pipeline_id, category, type, data, topic } = msg
 
       if (!category || !type) {
         console.warn('Missing category or type in WebSocket message', msg)
@@ -199,7 +192,7 @@ const connectWebSocket = (): Promise<boolean> => {
           break
 
         case 'stream':
-          handleStreamEvent()
+          handleStreamEvent(type, data, pipeline_id, topic)
           break
 
         default:
@@ -212,9 +205,6 @@ const connectWebSocket = (): Promise<boolean> => {
       resolve(true)
     }
 
-      case 'stream':
-        handleStreamEvent(type, data, pipeline_id, topic)
-        break
     ws.onerror = () => {
       console.warn('WebSocket error')
       ws = null
@@ -321,7 +311,6 @@ const handleStreamEvent = (
     }
   }
 }
-
 
 const closeWebSocket = () => {
   if (ws) {
@@ -645,7 +634,6 @@ const stopDrag = (): void => {
   document.removeEventListener('mouseup', stopDrag)
 }
 
-
 onMounted(() => {
   connectWebSocket()
 })
@@ -667,7 +655,9 @@ onUnmounted(() => {
     @edge-double-click="removeEdge"
     :connection-mode="ConnectionMode.Strict"
     :delete-key-code="null"
+    panActivationKeyCode="{ actInsideInputWithModifier: false }"
   >
+    <!-- temp fix https://github.com/bcakmakoglu/vue-flow/issues/1999 -->
     <Panel position="bottom-center">
       <div class="panel button-container">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
@@ -685,7 +675,7 @@ onUnmounted(() => {
           type="button"
           @click="showIoPanel = !showIoPanel"
         >
-        Input / Output Panel
+          Input / Output Panel
         </button>
       </div></Panel
     >
@@ -753,47 +743,43 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
-  <!-- Pipeline Status -->
   <div
-  v-if="showIoPanel"
-  :style="{
-    position: 'fixed',
-    left: panelPosition.x + 'px',
-    top: panelPosition.y + 'px',
-    width: '650px',
-    height: '420px',
-    display: 'flex',
-    gap: '10px',
-    background: '#ffffff',
-    padding: '10px',
-    fontFamily: 'monospace',
-    zIndex: 100000,
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-  }"
->
-  <!-- HEADER (DRAG HANDLE) -->
-  <div
-    style="position: absolute; top: -28px; left: 0; cursor: move;"
-    @mousedown="startDrag"
+    v-if="showIoPanel"
+    :style="{
+      position: 'fixed',
+      left: panelPosition.x + 'px',
+      top: panelPosition.y + 'px',
+      width: '650px',
+      height: '420px',
+      display: 'flex',
+      gap: '10px',
+      background: '#ffffff',
+      padding: '10px',
+      fontFamily: 'monospace',
+      zIndex: 100000,
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    }"
   >
-    <strong>↕ Stream Inspector</strong>
-  </div>
+    <!-- HEADER (DRAG HANDLE) -->
+    <div style="position: absolute; top: -28px; left: 0; cursor: move" @mousedown="startDrag">
+      <strong>↕ Stream Inspector</strong>
+    </div>
 
-  <!-- INPUT -->
-  <div style="flex: 1; overflow: auto; border-right: 1px solid #ddd;">
-    <h4 style="color: #2e7d32;">Input</h4>
-    <pre>{{ inputMessages.slice(-5) }}</pre>
-  </div>
+    <!-- INPUT -->
+    <div style="flex: 1; overflow: auto; border-right: 1px solid #ddd">
+      <h4 style="color: #2e7d32">Input</h4>
+      <pre>{{ inputMessages.slice(-5) }}</pre>
+    </div>
 
-  <!-- OUTPUT -->
-  <div style="flex: 1; overflow: auto;">
-    <h4 style="color: #1565c0;">Output</h4>
-    <pre>{{ outputMessages.slice(-5) }}</pre>
+    <!-- OUTPUT -->
+    <div style="flex: 1; overflow: auto">
+      <h4 style="color: #1565c0">Output</h4>
+      <pre>{{ outputMessages.slice(-5) }}</pre>
+    </div>
   </div>
-</div>
-
+  <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"

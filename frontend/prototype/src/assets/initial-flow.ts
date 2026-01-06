@@ -4,7 +4,7 @@ export const initialNodes: Node[] = [
   {
     id: '1',
     type: 'custom-input',
-    data: { content: 'Input Topic' },
+    data: { content: 'InputTopic' },
     position: { x: 0, y: 500 },
   },
   {
@@ -24,7 +24,7 @@ export const initialNodes: Node[] = [
   {
     id: '3',
     type: 'custom-intermediate',
-    data: { content: 'Intermediate Topic' },
+    data: { content: 'IntermediateTopic' },
     position: { x: 600, y: 500 },
   },
   {
@@ -44,7 +44,7 @@ export const initialNodes: Node[] = [
   {
     id: '5',
     type: 'custom-output',
-    data: { content: 'Output Topic' },
+    data: { content: 'OutputTopic' },
     position: { x: 1200, y: 500 },
   },
 ]
