@@ -22,8 +22,8 @@ This project is a modern data pipeline orchestrator with a **Vue 3 frontend** an
 ### Screenshots
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="./frontend/prototype/docs/Screenshot_from_2026-01-04_11:05:54.png" alt="light" width="48%">
-    <img src="./frontend/prototype/docs/Screenshot_from_2026-01-04_11:06:16.png" alt="dark" width="48%">
+    <img src="./frontend/prototype/docs/Sc1.png" alt="light" width="48%">
+    <img src="./frontend/prototype/docs/Sc2.png" alt="dark" width="48%">
 </div>
 
 ---
@@ -141,6 +141,7 @@ The backend is a modular FastAPI orchestration engine for data streaming pipelin
 
 ---
 
-## Contact 
-- For backend issues: Sara, Amina  
+## Contact
+
+- For backend issues: Sara, Amina
 - For frontend issues: Ananthu, Xavier, Victor, Thamarai
