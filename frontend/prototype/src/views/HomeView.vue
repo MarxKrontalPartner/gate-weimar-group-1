@@ -590,7 +590,9 @@ onUnmounted(() => {
     @edge-double-click="removeEdge"
     :connection-mode="ConnectionMode.Strict"
     :delete-key-code="null"
+    panActivationKeyCode="{ actInsideInputWithModifier: false }"
   >
+    <!-- temp fix https://github.com/bcakmakoglu/vue-flow/issues/1999 -->
     <Panel position="bottom-center">
       <div class="panel button-container">
         <button class="uk-button uk-button-primary uk-button-small" type="button" @click="addNode">
