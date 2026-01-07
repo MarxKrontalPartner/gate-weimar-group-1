@@ -11,7 +11,21 @@ export const TranslationsDE = {
     addTransformationNode: 'Transformationsknoten hinzufügen',
     addIntermediateNode: 'Zwischenknoten hinzufügen',
     runPipeline: 'Pipeline ausführen',
+    runTransformation: 'Transformation ausführen',
+    running: 'Läuft...',
   },
+
+  status: {
+    loadingRuntime: 'Python-Laufzeit wird geladen...',
+    runtimeReady: 'Laufzeit bereit',
+    runtimeUnavailable: 'Laufzeit nicht verfügbar',
+  },
+  labels: {
+    output: 'Ausgabe',
+    line: 'Zeile',
+    hint: 'Hinweis',
+  },
+
   text: {
     nodeDeleteConfirm: {
       title: 'Knoten löschen Bestätigung',

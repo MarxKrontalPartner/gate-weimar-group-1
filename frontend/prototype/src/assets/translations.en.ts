@@ -11,6 +11,18 @@ export const TranslationsEN = {
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
     runPipeline: 'Run Pipeline',
+    runTransformation: 'Run Transformation',
+    running: 'Running...',
+  },
+  status: {
+    loadingRuntime: 'Loading Python runtime...',
+    runtimeReady: 'Runtime ready',
+    runtimeUnavailable: 'Runtime not available',
+  },
+  labels: {
+    output: 'Output',
+    line: 'Line',
+    hint: 'Hint',
   },
   text: {
     nodeDeleteConfirm: {
