@@ -13,18 +13,29 @@ export const TranslationsEN = {
     runPipeline: 'Run Pipeline',
     runTransformation: 'Run Transformation',
     running: 'Running...',
+    testRuntime: 'Test',
+    abort: 'Abort!',
   },
   status: {
     loadingRuntime: 'Loading Python runtime...',
     runtimeReady: 'Runtime ready',
     runtimeUnavailable: 'Runtime not available',
+    runtimeError: 'Error loading runtime',
   },
   labels: {
+    enterJsonInput: 'Enter JSON Input:',
     output: 'Output',
     line: 'Line',
-    hint: 'Hint',
   },
   text: {
+    transformNodeAlert: {
+      missingInputData: 'Input data is missing. For Example: ',
+      jsonInputRequired: 'Input must be a JSON object.',
+      invalidJson: 'Invalid JSON: ',
+      workerInitializationError: 'Failed to load worker for Python runtime (Pyodide).',
+      messageOnAbort: 'Execution aborted. Runtime will be reinitialized on next Test.',
+      workerTimedOut: 'Execution timed out. Please Test runtime again.',
+    },
     nodeDeleteConfirm: {
       title: 'Delete Node Confirmation',
       warning: 'Are you sure you want to delete the selected Nodes?',
