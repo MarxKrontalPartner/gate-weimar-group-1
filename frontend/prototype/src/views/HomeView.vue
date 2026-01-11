@@ -329,24 +329,23 @@ const createRequest = async () => {
   const obj = toObject()
   let transformations: string[] = []
   const payload: Payload[] = []
-  
 
-const inputNode = obj.nodes.find((n) => n.type === 'custom-input')
-const outputNode = obj.nodes.find((n) => n.type === 'custom-output')
+  const inputNode = obj.nodes.find((n) => n.type === 'custom-input')
+  const outputNode = obj.nodes.find((n) => n.type === 'custom-output')
 
-if (!inputNode || !outputNode) {
-  console.error('Input or Output node missing in pipeline definition', {
-    inputNode,
-    outputNode,
-  })
-  return
-}
+  if (!inputNode || !outputNode) {
+    console.error('Input or Output node missing in pipeline definition', {
+      inputNode,
+      outputNode,
+    })
+    return
+  }
 
-realInputTopic.value = inputNode.data.content
-realOutputTopic.value = outputNode.data.content
+  realInputTopic.value = inputNode.data.content
+  realOutputTopic.value = outputNode.data.content
 
-inputMessages.value = []
-outputMessages.value = []
+  inputMessages.value = []
+  outputMessages.value = []
 
   if (!inputNode || !outputNode) {
     alert(t('text.missingIO'))
@@ -762,36 +761,32 @@ onUnmounted(() => {
     </Controls>
   </VueFlow>
   <div v-if="showIoPanel" class="io-overlay">
-  <div class="io-panel">
+    <div class="io-panel">
+      <!-- HEADER -->
+      <div class="io-header" @mousedown="startDrag">
+        <span>↕ Stream Inspector</span>
+        <button class="close-btn" @click="showIoPanel = false">✕</button>
+      </div>
 
-    <!-- HEADER -->
-    <div class="io-header" @mousedown="startDrag">
-      <span>↕ Stream Inspector</span>
-      <button class="close-btn" @click="showIoPanel = false">✕</button>
-    </div>
+      <!-- COLUMN HEADERS -->
+      <div class="io-columns-header">
+        <div class="col input">Input</div>
+        <div class="col output">Output</div>
+      </div>
 
-    <!-- COLUMN HEADERS -->
-    <div class="io-columns-header">
-      <div class="col input">Input</div>
-      <div class="col output">Output</div>
-    </div>
-
-    <!-- SCROLL AREA -->
-    <div class="io-scroll">
-      <div class="io-columns-body">
-        <div class="col input">
-          <pre>{{ inputMessages }}</pre>
-        </div>
-        <div class="col output">
-          <pre>{{ outputMessages }}</pre>
+      <!-- SCROLL AREA -->
+      <div class="io-scroll">
+        <div class="io-columns-body">
+          <div class="col input">
+            <pre>{{ inputMessages }}</pre>
+          </div>
+          <div class="col output">
+            <pre>{{ outputMessages }}</pre>
+          </div>
         </div>
       </div>
     </div>
-
   </div>
-</div>
-
-
 
   <!-- Pipeline Status -->
   <div
