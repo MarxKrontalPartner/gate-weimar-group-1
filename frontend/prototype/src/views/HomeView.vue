@@ -53,6 +53,8 @@ const showIoPanel = ref<boolean>(false)
 
 const inputMessages = ref<StreamMessage[]>([])
 const outputMessages = ref<StreamMessage[]>([])
+const realInputTopic = ref<string | null>(null)
+const realOutputTopic = ref<string | null>(null)
 
 type PipelineStatus = 'running' | 'completed' | 'failed'
 
@@ -295,7 +297,7 @@ const handleStreamEvent = (
     timestamp: Date.now(),
   }
 
-  if (type === 'input') {
+  if (topic === realInputTopic.value) {
     inputMessages.value.push(message)
 
     if (inputMessages.value.length > 50) {
@@ -303,7 +305,8 @@ const handleStreamEvent = (
     }
   }
 
-  if (type === 'output') {
+  // Only REAL output topic goes to output panel
+  if (topic === realOutputTopic.value) {
     outputMessages.value.push(message)
 
     if (outputMessages.value.length > 50) {
@@ -326,9 +329,24 @@ const createRequest = async () => {
   const obj = toObject()
   let transformations: string[] = []
   const payload: Payload[] = []
+  
 
-  const inputNode = obj.nodes.find((n) => n.type == 'custom-input')
-  const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
+const inputNode = obj.nodes.find((n) => n.type === 'custom-input')
+const outputNode = obj.nodes.find((n) => n.type === 'custom-output')
+
+if (!inputNode || !outputNode) {
+  console.error('Input or Output node missing in pipeline definition', {
+    inputNode,
+    outputNode,
+  })
+  return
+}
+
+realInputTopic.value = inputNode.data.content
+realOutputTopic.value = outputNode.data.content
+
+inputMessages.value = []
+outputMessages.value = []
 
   if (!inputNode || !outputNode) {
     alert(t('text.missingIO'))
@@ -743,42 +761,38 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
-  <div
-    v-if="showIoPanel"
-    :style="{
-      position: 'fixed',
-      left: panelPosition.x + 'px',
-      top: panelPosition.y + 'px',
-      width: '650px',
-      height: '420px',
-      display: 'flex',
-      gap: '10px',
-      background: '#ffffff',
-      padding: '10px',
-      fontFamily: 'monospace',
-      zIndex: 100000,
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-    }"
-  >
-    <!-- HEADER (DRAG HANDLE) -->
-    <div style="position: absolute; top: -28px; left: 0; cursor: move" @mousedown="startDrag">
-      <strong>↕ Stream Inspector</strong>
+  <div v-if="showIoPanel" class="io-overlay">
+  <div class="io-panel">
+
+    <!-- HEADER -->
+    <div class="io-header" @mousedown="startDrag">
+      <span>↕ Stream Inspector</span>
+      <button class="close-btn" @click="showIoPanel = false">✕</button>
     </div>
 
-    <!-- INPUT -->
-    <div style="flex: 1; overflow: auto; border-right: 1px solid #ddd">
-      <h4 style="color: #2e7d32">Input</h4>
-      <pre>{{ inputMessages.slice(-5) }}</pre>
+    <!-- COLUMN HEADERS -->
+    <div class="io-columns-header">
+      <div class="col input">Input</div>
+      <div class="col output">Output</div>
     </div>
 
-    <!-- OUTPUT -->
-    <div style="flex: 1; overflow: auto">
-      <h4 style="color: #1565c0">Output</h4>
-      <pre>{{ outputMessages.slice(-5) }}</pre>
+    <!-- SCROLL AREA -->
+    <div class="io-scroll">
+      <div class="io-columns-body">
+        <div class="col input">
+          <pre>{{ inputMessages }}</pre>
+        </div>
+        <div class="col output">
+          <pre>{{ outputMessages }}</pre>
+        </div>
+      </div>
     </div>
+
   </div>
+</div>
+
+
+
   <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
@@ -918,5 +932,92 @@ onUnmounted(() => {
   cursor: not-allowed;
   border-color: #dae0e5;
   box-shadow: none;
+}
+.io-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.io-panel {
+  width: 900px;
+  height: 500px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: monospace;
+}
+
+/* Header */
+.io-header {
+  height: 44px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  cursor: move;
+  font-weight: 600;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Column titles */
+.io-columns-header {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.io-columns-header .col {
+  flex: 1;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.io-columns-header .input {
+  color: #2e7d32;
+  border-right: 1px solid #ddd;
+}
+
+.io-columns-header .output {
+  color: #1565c0;
+}
+
+/* Scroll area */
+.io-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Content */
+.io-columns-body {
+  display: flex;
+  height: 100%;
+}
+
+.io-columns-body .col {
+  flex: 1;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.io-columns-body .input {
+  border-right: 1px solid #eee;
 }
 </style>
