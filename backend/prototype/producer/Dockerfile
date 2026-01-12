@@ -8,5 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY producer/app ./app
 COPY shared/logger ./shared/logger
+COPY shared/events ./shared/events
 
 CMD ["python", "-m", "app.producer"]

@@ -3,6 +3,7 @@ import docker
 import time
 import json
 import os
+import traceback
 
 from app.pipelines.models import PipelineInput, PipelineStatus
 from app.pipelines.registry import get_pipeline
@@ -86,6 +87,8 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
             logger.info("Launching PRODUCER container…")
 
             producer_env_vars = {
+                "PIPELINE_ID": pipeline.pipeline_id,
+                "SEGMENT_INDEX": str(segment_index),
                 "BROKER_ADDRESS": broker_address,
                 "INPUT_TOPIC": pipeline.input_topic,
                 "N_CHANNELS": str(pipeline.n_channels),
@@ -132,13 +135,6 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
 
                 if worker_status == "exited":
                     logger.error("Worker exited unexpectedly — failing pipeline")
-                    emit_event(
-                        pipeline_id=pipeline.pipeline_id,
-                        segment_index=segment_index,
-                        category="lifecycle",
-                        type="failed",
-                        data="Worker container exited unexpectedly",
-                    )
 
                     if producer_container:
                         stop_and_remove_container(producer_container, name="producer")
@@ -152,13 +148,6 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
 
                 if producer_status == "exited":
                     logger.error("Producer exited unexpectedly — failing pipeline")
-                    emit_event(
-                        pipeline_id=pipeline.pipeline_id,
-                        segment_index=segment_index,
-                        category="lifecycle",
-                        type="failed",
-                        data="Producer container exited unexpectedly",
-                    )
 
                     if worker_container:
                         stop_and_remove_container(worker_container, name="worker")
@@ -192,7 +181,10 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
             pipeline_id=pipeline.pipeline_id,
             category="lifecycle",
             type="failed",
-            data=str(e),
+            data={
+                "message": f"Lifecycle Manager crashed:\n\n{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc(),
+            },
         )
         
         if worker_container:
