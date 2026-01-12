@@ -50,6 +50,8 @@ interface PipelineState {
   id: string
   status: PipelineStatus
   message: string
+  traceback?: string
+  showTraceback?: boolean
 }
 
 const currentPipeline = ref<PipelineState | null>(null)
@@ -246,6 +248,12 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'failed'
       if (typeof data === 'string') {
         currentPipeline.value.message = data
+        currentPipeline.value.traceback = undefined
+      } else if (data && typeof data === 'object') {
+        const error = data as { message?: string; traceback?: string }
+        currentPipeline.value.message = error.message ?? 'Pipeline failed'
+        currentPipeline.value.traceback = error.traceback
+        currentPipeline.value.showTraceback = false
       } else {
         currentPipeline.value.message = 'Pipeline failed'
       }
@@ -260,7 +268,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
   }
 
   // Hide ONLY when completed or failed (after 5s)
-  if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'failed') {
+  if (currentPipeline.value.status === 'completed') {
     statusTimer = window.setTimeout(() => {
       currentPipeline.value = null
     }, 5000)
@@ -695,6 +703,35 @@ onUnmounted(() => {
           $t(`text.pipeline.status.${currentPipeline.status}`)
         }}
       </span>
+      <button
+        v-if="currentPipeline.status === 'failed'"
+        class="uk-button uk-button-small uk-button-default uk-margin-left"
+        @click="currentPipeline = null"
+        title="Close"
+      >
+        ✕
+      </button>
+    </div>
+    <div v-if="currentPipeline.status === 'failed'" class="uk-margin-small-top">
+      <div class="status-text uk-text-danger">
+        {{ currentPipeline.message }}
+      </div>
+      <div
+        v-if="currentPipeline.traceback"
+        class="uk-margin-small-top"
+      >
+        <button
+          class="uk-button uk-button-small uk-button-primary"
+          @click="currentPipeline.showTraceback = !currentPipeline.showTraceback"
+        >
+          {{ currentPipeline.showTraceback ? $t('btns.hideTraceback') : $t('btns.showTraceback') }}
+        </button>
+        <pre
+          v-if="currentPipeline.showTraceback"
+          class="uk-margin-small-top"
+          v-text="currentPipeline.traceback"
+        ></pre>
+      </div>
     </div>
   </div>
   <!-- Deletion Confirmation -->

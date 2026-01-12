@@ -223,10 +223,20 @@ body,
   z-index: 1500;
 }
 
+.pipeline-status pre {
+  max-height: 300px;
+  max-width: 460px;
+  white-space: pre-wrap;
+  text-align: left;
+  font-size: 12px;
+  background-color: #f8f8f8;
+}
+
 .status-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 20px;
 }
 
 .status-dot {
@@ -278,7 +288,7 @@ body,
 .status-text {
   font-size: 13px;
   font-weight: 500;
-  max-width: 420px;
+  max-width: 400px;
   overflow-wrap: break-word;
   text-align: left;
 }

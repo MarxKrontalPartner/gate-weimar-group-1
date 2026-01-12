@@ -11,6 +11,8 @@ export const TranslationsEN = {
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
     runPipeline: 'Run Pipeline',
+    showTraceback: 'Show Traceback',
+    hideTraceback: 'Hide Traceback',
   },
   text: {
     nodeDeleteConfirm: {
