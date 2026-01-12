@@ -32,7 +32,7 @@ const flags: Record<string, string> = {
             :key="`locale-${locale}`"
             :value="locale"
           >
-            <span class="emoji">{{ flags[locale] || '🌐' }}</span> {{ locale.toUpperCase() }}
+            {{ flags[locale] || '🌐' }} {{ locale.toUpperCase() }}
           </option>
         </select>
       </div>
