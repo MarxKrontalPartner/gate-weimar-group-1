@@ -45,5 +45,6 @@ export const TranslationsDE = {
       channelsError: 'Anzahl der Kanäle muss eine positive ganze Zahl sein',
       frequencyError: 'Frequenz muss eine positive Zahl sein',
     },
+    exportGraph: 'Name der exportierten Grafik (.json), Standard graph.json',
   },
 }

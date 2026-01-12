@@ -385,7 +385,8 @@ const onExport = () => {
 
   const link = document.createElement('a')
   link.href = url
-  link.download = 'graph.json'
+  const fileName = prompt(t('text.exportGraph')) || 'graph.json'
+  link.download = fileName
   link.click()
 
   URL.revokeObjectURL(url)
