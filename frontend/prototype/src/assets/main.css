@@ -272,6 +272,14 @@ body,
   content: '✕';
 }
 
+.status-dot.aborted {
+  background-color: var(--mkpInfo);
+}
+
+.status-dot.aborted::after {
+  content: '!';
+}
+
 /* Blink animation */
 @keyframes blink {
   0% {

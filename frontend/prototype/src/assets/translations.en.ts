@@ -13,6 +13,8 @@ export const TranslationsEN = {
     runPipeline: 'Run Pipeline',
     showTraceback: 'Show Traceback',
     hideTraceback: 'Hide Traceback',
+    abort: 'Abort',
+    aborting: 'Aborting...',
   },
   text: {
     nodeDeleteConfirm: {
@@ -25,12 +27,14 @@ export const TranslationsEN = {
     backendContactError: 'Failed to contact backend.',
     webSocketError:
       'Cannot connect to backend or WebSocket. Please restart the backend and try again.',
+    abortError: 'Failed to abort pipeline.',
     pipeline: {
       label: 'Pipeline',
       status: {
         running: 'running',
         completed: 'completed',
         failed: 'failed',
+        aborted: 'aborted',
       },
     },
     runPipeline: {

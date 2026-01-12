@@ -44,7 +44,7 @@ const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
 
-type PipelineStatus = 'running' | 'completed' | 'failed'
+type PipelineStatus = 'running' | 'completed' | 'failed' | 'aborted'
 
 interface PipelineState {
   id: string
@@ -59,6 +59,8 @@ const currentPipeline = ref<PipelineState | null>(null)
 let statusTimer: number | null = null
 
 const isRunning = ref(false)
+
+const isAborting = ref(false)
 
 const runForm = reactive({
   allowProducer: false,
@@ -137,7 +139,7 @@ function addIntermediateNode() {
     id,
     position: { x: 400, y: 500 },
     type: 'custom-intermediate',
-    data: { content: 'Intermediate Topic' },
+    data: { content: 'IntermediateTopic' },
   })
 }
 
@@ -242,6 +244,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'completed'
       currentPipeline.value.message = 'Pipeline completed'
       isRunning.value = false
+      isAborting.value = false
       break
 
     case 'failed':
@@ -258,6 +261,14 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
         currentPipeline.value.message = 'Pipeline failed'
       }
       isRunning.value = false
+      isAborting.value = false
+      break
+
+    case 'aborted':
+      currentPipeline.value.status = 'aborted'
+      currentPipeline.value.message = 'Pipeline aborted'
+      isRunning.value = false
+      isAborting.value = false
       break
   }
 
@@ -268,7 +279,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
   }
 
   // Hide ONLY when completed or failed (after 5s)
-  if (currentPipeline.value.status === 'completed') {
+  if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'aborted') {
     statusTimer = window.setTimeout(() => {
       currentPipeline.value = null
     }, 5000)
@@ -285,6 +296,28 @@ const closeWebSocket = () => {
   if (ws) {
     ws.close()
     ws = null
+  }
+}
+
+const abortPipeline = async () => {
+  if (!currentPipeline.value) return
+
+  isAborting.value = true
+
+  try {
+    const res = await fetch(`/api/abort/${currentPipeline.value.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (!res.ok) {
+      isAborting.value = false
+      alert(t('text.abortError'))
+    }
+  } catch (e) {
+    console.error(e)
+    isAborting.value = false
+    alert(t('text.abortError'))
   }
 }
 
@@ -691,6 +724,7 @@ onUnmounted(() => {
           running: currentPipeline.status === 'running',
           completed: currentPipeline.status === 'completed',
           failed: currentPipeline.status === 'failed',
+          aborted: currentPipeline.status === 'aborted',
         }"
       ></span>
 
@@ -704,6 +738,19 @@ onUnmounted(() => {
         }}
       </span>
       <button
+        v-if="currentPipeline.status === 'running'"
+        class="uk-button uk-delete-button uk-button-small"
+        :disabled="isAborting"
+        @click="abortPipeline"
+      >
+        <template v-if="!isAborting">
+          {{ $t('btns.abort') }}
+        </template>
+        <template v-else>
+          {{ $t('btns.aborting') }}
+        </template>
+      </button>
+      <button
         v-if="currentPipeline.status === 'failed'"
         class="uk-button uk-button-small uk-button-default uk-margin-left"
         @click="currentPipeline = null"
@@ -716,10 +763,7 @@ onUnmounted(() => {
       <div class="status-text uk-text-danger">
         {{ currentPipeline.message }}
       </div>
-      <div
-        v-if="currentPipeline.traceback"
-        class="uk-margin-small-top"
-      >
+      <div v-if="currentPipeline.traceback" class="uk-margin-small-top">
         <button
           class="uk-button uk-button-small uk-button-primary"
           @click="currentPipeline.showTraceback = !currentPipeline.showTraceback"
