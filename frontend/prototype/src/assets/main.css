@@ -116,6 +116,10 @@ body,
   color: #fffffb;
 }
 
+.vue-flow__node {
+  background: #ffffff;
+}
+
 .basic-flow.dark .vue-flow__node {
   background: #4a5568;
   color: #fffffb;
