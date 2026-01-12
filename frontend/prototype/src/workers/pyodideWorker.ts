@@ -8,7 +8,7 @@ let pyodide: PyodideInterface | null = null
 
 async function ensurePyodide(): Promise<PyodideInterface> {
   if (!pyodide) {
-    const basePath = self.location.origin + '/gate-weimar-group-1/pyodide/'
+    const basePath = 'https://cdn.jsdelivr.net/pyodide/v0.29.1/full/'
 
     try {
       pyodide = await loadPyodide({
