@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted, onMounted, reactive, nextTick, inject, type Ref } from 'vue'
-import {
-  ConnectionMode,
-  VueFlow,
-  useVueFlow,
-  Panel,
-  type Edge,
-  type FlowExportObject,
-} from '@vue-flow/core'
+import { ConnectionMode, VueFlow, useVueFlow, Panel, type FlowExportObject } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
@@ -33,10 +26,11 @@ const {
   addEdges,
   toObject,
   fromObject,
-  removeEdges,
   removeNodes,
+  removeEdges,
   getOutgoers,
   getSelectedNodes,
+  getSelectedEdges,
   setViewport,
 } = useVueFlow()
 
@@ -95,10 +89,6 @@ watch(
   },
   { immediate: true },
 )
-
-function removeEdge({ edge }: { edge: Edge }) {
-  removeEdges(edge.id)
-}
 
 function delConfirm() {
   UIkit.modal('#del-confirm').show()
@@ -466,8 +456,12 @@ window.addEventListener('keydown', (e) => {
     return
   }
 
-  if ((e.key === 'Delete' || e.key === 'Del') && getSelectedNodes.value.length > 0) {
-    delConfirm()
+  if (e.key === 'Delete' || e.key === 'Del') {
+    if (getSelectedNodes.value.length > 0) {
+      delConfirm()
+    } else if (getSelectedEdges.value.length > 0) {
+      deleteSelectedEdges()
+    }
   } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
     e.preventDefault()
     undo()
@@ -481,6 +475,13 @@ const deleteSelectedNodes = () => {
   const selectedNodes = getSelectedNodes.value
   if (selectedNodes.length > 0) {
     removeNodes(selectedNodes, true)
+  }
+}
+
+const deleteSelectedEdges = () => {
+  const selectedEdges = getSelectedEdges.value
+  if (selectedEdges.length > 0) {
+    removeEdges(selectedEdges)
   }
 }
 
@@ -587,7 +588,6 @@ onUnmounted(() => {
     :default-viewport="{ zoom: 1 }"
     :min-zoom="0.2"
     :max-zoom="4"
-    @edge-double-click="removeEdge"
     :connection-mode="ConnectionMode.Strict"
     :delete-key-code="null"
     panActivationKeyCode="{ actInsideInputWithModifier: false }"
