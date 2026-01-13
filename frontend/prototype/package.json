@@ -24,6 +24,7 @@
     "monaco-editor": "^0.55.1",
     "monaco-editor-vue3": "^1.0.4",
     "pinia": "^3.0.3",
+    "pyodide": "0.29.1",
     "uikit": "^3.25.1",
     "vue": "^3.5.22",
     "vue-i18n": "^11.2.7",
