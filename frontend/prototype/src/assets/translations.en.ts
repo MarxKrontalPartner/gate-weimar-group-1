@@ -67,5 +67,6 @@ export const TranslationsEN = {
       channelsError: 'Number of channels must be a positive integer',
       frequencyError: 'Frequency must be a positive number',
     },
+    exportGraph: 'Name of the exported graph (.json), default graph.json',
   },
 }
