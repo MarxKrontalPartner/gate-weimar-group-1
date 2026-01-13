@@ -206,11 +206,80 @@ body,
 }
 
 .panel {
-  width: 800px;
+  width: 1000px;
 }
 
 .basic-flow .vue-flow__node.selected {
   box-shadow: 0 0 0 1px black;
+}
+
+/* IO Modal*/
+.io-modal-dialog {
+  width: 900px;
+  max-width: 95vw;
+}
+
+.io-columns-header {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+  border-radius: 3px;
+  background: var(--mkpLightenGrey1);
+  position: relative;
+}
+
+.io-columns-header .col {
+  flex: 1;
+  padding: 10px 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.io-columns-header .input {
+  color: #2e7d32;
+}
+
+.io-columns-header .output {
+  color: #1565c0;
+}
+
+.io-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.io-columns-body {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  position: relative;
+}
+
+.io-columns-body .col {
+  flex: 1;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap !important;
+  font-size: 13px !important;
+  min-width: 0;
+}
+
+.io-columns-body::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: #ddd;
+  pointer-events: none;
+}
+
+.io-columns-body pre {
+  background: #f8f8f8;
+  margin: 0;
+  padding: 6px;
+  width: fit-content;
 }
 
 /* Pipeline status overlay */

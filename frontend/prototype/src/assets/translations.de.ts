@@ -11,8 +11,12 @@ export const TranslationsDE = {
     addTransformationNode: 'Transformationsknoten hinzufügen',
     addIntermediateNode: 'Zwischenknoten hinzufügen',
     runPipeline: 'Pipeline ausführen',
+    viewPipelineResults: 'Pipeline-Ergebnisse anzeigen',
   },
   text: {
+    input: 'Eingabe',
+    output: 'Ausgabe',
+    streamInspector: 'Stream-Inspektor',
     nodeDeleteConfirm: {
       title: 'Knoten löschen Bestätigung',
       warning: 'Möchten Sie die ausgewählten Knoten wirklich löschen?',

@@ -11,8 +11,12 @@ export const TranslationsEN = {
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
     runPipeline: 'Run Pipeline',
+    viewPipelineResults: 'View Pipeline Results',
   },
   text: {
+    input: 'Input',
+    output: 'Output',
+    streamInspector: 'Stream Inspector',
     nodeDeleteConfirm: {
       title: 'Delete Node Confirmation',
       warning: 'Are you sure you want to delete the selected Nodes?',

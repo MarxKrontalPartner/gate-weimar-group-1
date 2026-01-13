@@ -43,18 +43,13 @@ const {
 const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
-interface StreamMessage {
-  topic?: string
-  data: unknown
-  timestamp: number
-}
 
-const showIoPanel = ref<boolean>(false)
-
-const inputMessages = ref<StreamMessage[]>([])
-const outputMessages = ref<StreamMessage[]>([])
-const realInputTopic = ref<string | null>(null)
-const realOutputTopic = ref<string | null>(null)
+const inputMessages = ref<unknown[]>([])
+const outputMessages = ref<unknown[]>([])
+const inputTopicName = ref<string>('')
+const outputTopicName = ref<string>('')
+const showIoPanel = ref(false)
+const lastRunCompleted = ref(false)
 
 type PipelineStatus = 'running' | 'completed' | 'failed'
 
@@ -194,7 +189,7 @@ const connectWebSocket = (): Promise<boolean> => {
           break
 
         case 'stream':
-          handleStreamEvent(type, data, pipeline_id, topic)
+          handleStreamEvent(data, pipeline_id, topic)
           break
 
         default:
@@ -252,6 +247,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'completed'
       currentPipeline.value.message = 'Pipeline completed'
       isRunning.value = false
+      lastRunCompleted.value = true
       break
 
     case 'failed':
@@ -281,37 +277,20 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
   console.log(`[Pipeline ${pipeline_id}]`, currentPipeline.value.message)
 }
 
-const handleStreamEvent = (
-  type: string,
-  data: unknown,
-  pipeline_id: string,
-  topic?: string,
-): void => {
-  if (!currentPipeline.value || currentPipeline.value.id !== pipeline_id) {
+function pushLatest(arr: unknown[], item: unknown) {
+  arr.push(item)
+  if (arr.length > 5) arr.shift() // Keep only the latest 5 messages
+}
+
+const handleStreamEvent = (data: unknown, pipeline_id: string, topic?: string) => {
+  if (!currentPipeline.value || currentPipeline.value.id !== pipeline_id || !topic) {
     return
   }
 
-  const message: StreamMessage = {
-    topic,
-    data,
-    timestamp: Date.now(),
-  }
-
-  if (topic === realInputTopic.value) {
-    inputMessages.value.push(message)
-
-    if (inputMessages.value.length > 50) {
-      inputMessages.value.shift()
-    }
-  }
-
-  // Only REAL output topic goes to output panel
-  if (topic === realOutputTopic.value) {
-    outputMessages.value.push(message)
-
-    if (outputMessages.value.length > 50) {
-      outputMessages.value.shift()
-    }
+  if (topic === inputTopicName.value) {
+    pushLatest(inputMessages.value, data)
+  } else if (topic === outputTopicName.value) {
+    pushLatest(outputMessages.value, data)
   }
 }
 
@@ -332,20 +311,6 @@ const createRequest = async () => {
 
   const inputNode = obj.nodes.find((n) => n.type === 'custom-input')
   const outputNode = obj.nodes.find((n) => n.type === 'custom-output')
-
-  if (!inputNode || !outputNode) {
-    console.error('Input or Output node missing in pipeline definition', {
-      inputNode,
-      outputNode,
-    })
-    return
-  }
-
-  realInputTopic.value = inputNode.data.content
-  realOutputTopic.value = outputNode.data.content
-
-  inputMessages.value = []
-  outputMessages.value = []
 
   if (!inputNode || !outputNode) {
     alert(t('text.missingIO'))
@@ -432,6 +397,13 @@ const createRequest = async () => {
 
     const result = await res.json()
     console.log('Backend response:', result)
+
+    inputTopicName.value = inputNode.data.content
+    outputTopicName.value = outputNode.data.content
+
+    inputMessages.value = []
+    outputMessages.value = []
+    lastRunCompleted.value = false
 
     currentPipeline.value = {
       id: pipelineId,
@@ -624,31 +596,10 @@ const redo = async () => {
     isInternalChange.value = false
   }, 100)
 }
-const panelPosition = ref({ x: 100, y: 100 })
-let isDragging = false
-let offsetX = 0
-let offsetY = 0
 
-const startDrag = (event: MouseEvent): void => {
-  isDragging = true
-  offsetX = event.clientX - panelPosition.value.x
-  offsetY = event.clientY - panelPosition.value.y
-
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
-}
-
-const onDrag = (event: MouseEvent): void => {
-  if (!isDragging) return
-
-  panelPosition.value.x = event.clientX - offsetX
-  panelPosition.value.y = event.clientY - offsetY
-}
-
-const stopDrag = (): void => {
-  isDragging = false
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', stopDrag)
+function formatData(data: unknown): string {
+  if (typeof data === 'string') return data
+  return JSON.stringify(data, null, 2)
 }
 
 onMounted(() => {
@@ -689,10 +640,12 @@ onUnmounted(() => {
         </button>
         <button
           class="uk-button uk-button-primary uk-button-small"
+          id="view-results-button"
           type="button"
-          @click="showIoPanel = !showIoPanel"
+          uk-toggle="target: #io-modal"
+          :disabled="isRunning || !lastRunCompleted"
         >
-          Input / Output Panel
+          {{ $t('btns.viewPipelineResults') }}
         </button>
       </div></Panel
     >
@@ -760,34 +713,44 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
-  <div v-if="showIoPanel" class="io-overlay">
-    <div class="io-panel">
-      <!-- HEADER -->
-      <div class="io-header" @mousedown="startDrag">
-        <span>↕ Stream Inspector</span>
-        <button class="close-btn" @click="showIoPanel = false">✕</button>
+  <!-- Input/Output Panel -->
+  <div id="io-modal" uk-modal @beforehide="showIoPanel = false">
+    <div class="uk-modal-dialog uk-modal-body io-modal-dialog">
+      <div class="uk-flex uk-flex-between uk-flex-middle">
+        <h2 class="uk-modal-title">
+          {{ $t('text.streamInspector') }}
+        </h2>
+
+        <button class="uk-modal-close-default" type="button" uk-close></button>
       </div>
 
-      <!-- COLUMN HEADERS -->
-      <div class="io-columns-header">
-        <div class="col input">Input</div>
-        <div class="col output">Output</div>
+      <div class="io-columns-header uk-margin-small-bottom">
+        <div class="col input">{{ $t('text.input') }} - {{ inputTopicName }}</div>
+        <div class="col output">{{ $t('text.output') }} - {{ outputTopicName }}</div>
       </div>
 
-      <!-- SCROLL AREA -->
       <div class="io-scroll">
-        <div class="io-columns-body">
+        <div
+          v-for="i in Math.max(inputMessages.length, outputMessages.length)"
+          :key="i"
+          class="io-columns-body"
+        >
           <div class="col input">
-            <pre>{{ inputMessages }}</pre>
+            <pre v-if="inputMessages[i - 1]" v-text="formatData(inputMessages[i - 1] as unknown)" />
+            <span v-else class="placeholder">—</span>
           </div>
+
           <div class="col output">
-            <pre>{{ outputMessages }}</pre>
+            <pre
+              v-if="outputMessages[i - 1]"
+              v-text="formatData(outputMessages[i - 1] as unknown)"
+            />
+            <span v-else class="placeholder">—</span>
           </div>
         </div>
       </div>
     </div>
   </div>
-
   <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
@@ -921,98 +884,17 @@ onUnmounted(() => {
   color: white !important;
 }
 
+#view-results-button {
+  height: 30px;
+  color: white !important;
+}
+
+#view-results-button:disabled,
 #delete-button:disabled {
   background-color: #979494;
   color: #999;
   cursor: not-allowed;
   border-color: #dae0e5;
   box-shadow: none;
-}
-.io-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100000;
-}
-
-.io-panel {
-  width: 900px;
-  height: 500px;
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  font-family: monospace;
-}
-
-/* Header */
-.io-header {
-  height: 44px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  cursor: move;
-  font-weight: 600;
-}
-
-.close-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-/* Column titles */
-.io-columns-header {
-  display: flex;
-  border-bottom: 1px solid #ddd;
-  background: #fafafa;
-}
-
-.io-columns-header .col {
-  flex: 1;
-  padding: 8px 12px;
-  font-weight: 600;
-}
-
-.io-columns-header .input {
-  color: #2e7d32;
-  border-right: 1px solid #ddd;
-}
-
-.io-columns-header .output {
-  color: #1565c0;
-}
-
-/* Scroll area */
-.io-scroll {
-  flex: 1;
-  overflow-y: auto;
-}
-
-/* Content */
-.io-columns-body {
-  display: flex;
-  height: 100%;
-}
-
-.io-columns-body .col {
-  flex: 1;
-  padding: 10px 12px;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  font-size: 13px;
-}
-
-.io-columns-body .input {
-  border-right: 1px solid #eee;
 }
 </style>
