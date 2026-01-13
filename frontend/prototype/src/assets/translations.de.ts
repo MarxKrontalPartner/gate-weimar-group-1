@@ -13,10 +13,34 @@ export const TranslationsDE = {
     runPipeline: 'Pipeline ausführen',
     showTraceback: 'Traceback anzeigen',
     hideTraceback: 'Traceback verbergen',
-    abort: 'Abbrechen',
     aborting: 'Abbruch läuft...',
+    runTransformation: 'Transformation ausführen',
+    running: 'Läuft...',
+    testRuntime: 'Test',
+    abort: 'Abbruch!',
+  },
+  status: {
+    loadingRuntime: 'Python-Laufzeit wird geladen...',
+    runtimeReady: 'Laufzeit bereit',
+    runtimeUnavailable: 'Laufzeit nicht verfügbar',
+    runtimeError: 'Fehler beim Laden der Laufzeit',
+  },
+  labels: {
+    enterJsonInput: 'JSON-Eingabe eingeben:',
+    output: 'Ausgabe',
+    line: 'Zeile',
   },
   text: {
+    transformNodeAlert: {
+      missingInputData: 'Eingabedaten fehlen. Beispiel: ',
+      jsonInputRequired: 'Eingabe muss ein JSON-Objekt sein.',
+      invalidJson: 'Ungültiges JSON: ',
+      workerInitializationError:
+        'Laden des Workers für die Python-Laufzeit (Pyodide) fehlgeschlagen.',
+      messageOnAbort:
+        'Ausführung abgebrochen. Die Laufzeit wird beim nächsten Test neu initialisiert.',
+      workerTimedOut: 'Ausführung zeitüberschritten. Bitte Laufzeit erneut testen.',
+    },
     nodeDeleteConfirm: {
       title: 'Knoten löschen Bestätigung',
       warning: 'Möchten Sie die ausgewählten Knoten wirklich löschen?',
@@ -51,5 +75,6 @@ export const TranslationsDE = {
       channelsError: 'Anzahl der Kanäle muss eine positive ganze Zahl sein',
       frequencyError: 'Frequenz muss eine positive Zahl sein',
     },
+    exportGraph: 'Name der exportierten Grafik (.json), Standard graph.json',
   },
 }
