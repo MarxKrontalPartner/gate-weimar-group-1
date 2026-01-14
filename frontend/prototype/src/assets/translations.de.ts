@@ -14,6 +14,7 @@ export const TranslationsDE = {
     showTraceback: 'Traceback anzeigen',
     hideTraceback: 'Traceback verbergen',
     aborting: 'Abbruch läuft...',
+    viewPipelineResults: 'Pipeline-Ergebnisse anzeigen',
     runTransformation: 'Transformation ausführen',
     running: 'Läuft...',
     testRuntime: 'Test',
@@ -31,6 +32,9 @@ export const TranslationsDE = {
     line: 'Zeile',
   },
   text: {
+    input: 'Eingabe',
+    output: 'Ausgabe',
+    streamInspector: 'Stream-Inspektor',
     transformNodeAlert: {
       missingInputData: 'Eingabedaten fehlen. Beispiel: ',
       jsonInputRequired: 'Eingabe muss ein JSON-Objekt sein.',
