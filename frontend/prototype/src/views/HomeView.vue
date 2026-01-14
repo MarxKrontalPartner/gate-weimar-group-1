@@ -38,6 +38,13 @@ const nodes = ref(initialNodes)
 
 const edges = ref(initialEdges)
 
+const inputMessages = ref<unknown[]>([])
+const outputMessages = ref<unknown[]>([])
+const inputTopicName = ref<string>('')
+const outputTopicName = ref<string>('')
+const showIoPanel = ref(false)
+const lastRunCompleted = ref(false)
+
 type PipelineStatus = 'running' | 'completed' | 'failed'
 
 interface PipelineState {
@@ -159,7 +166,7 @@ const connectWebSocket = (): Promise<boolean> => {
 
     ws.onmessage = (event) => {
       const msg = JSON.parse(event.data)
-      const { pipeline_id, category, type, data } = msg
+      const { pipeline_id, category, type, data, topic } = msg
 
       if (!category || !type) {
         console.warn('Missing category or type in WebSocket message', msg)
@@ -172,7 +179,7 @@ const connectWebSocket = (): Promise<boolean> => {
           break
 
         case 'stream':
-          handleStreamEvent()
+          handleStreamEvent(data, pipeline_id, topic)
           break
 
         default:
@@ -230,6 +237,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'completed'
       currentPipeline.value.message = 'Pipeline completed'
       isRunning.value = false
+      lastRunCompleted.value = true
       break
 
     case 'failed':
@@ -259,8 +267,21 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
   console.log(`[Pipeline ${pipeline_id}]`, currentPipeline.value.message)
 }
 
-const handleStreamEvent = (): void => {
-  // TODO: implement streaming data event handling
+function pushLatest(arr: unknown[], item: unknown) {
+  arr.push(item)
+  if (arr.length > 5) arr.shift() // Keep only the latest 5 messages
+}
+
+const handleStreamEvent = (data: unknown, pipeline_id: string, topic?: string) => {
+  if (!currentPipeline.value || currentPipeline.value.id !== pipeline_id || !topic) {
+    return
+  }
+
+  if (topic === inputTopicName.value) {
+    inputMessages.value.push(data)
+  } else if (topic === outputTopicName.value) {
+    pushLatest(outputMessages.value, data)
+  }
 }
 
 const closeWebSocket = () => {
@@ -278,8 +299,8 @@ const createRequest = async () => {
   let transformations: string[] = []
   const payload: Payload[] = []
 
-  const inputNode = obj.nodes.find((n) => n.type == 'custom-input')
-  const outputNode = obj.nodes.find((n) => n.type == 'custom-output')
+  const inputNode = obj.nodes.find((n) => n.type === 'custom-input')
+  const outputNode = obj.nodes.find((n) => n.type === 'custom-output')
 
   if (!inputNode || !outputNode) {
     alert(t('text.missingIO'))
@@ -366,6 +387,13 @@ const createRequest = async () => {
 
     const result = await res.json()
     console.log('Backend response:', result)
+
+    inputTopicName.value = inputNode.data.content
+    outputTopicName.value = outputNode.data.content
+
+    inputMessages.value = []
+    outputMessages.value = []
+    lastRunCompleted.value = false
 
     currentPipeline.value = {
       id: pipelineId,
@@ -571,12 +599,36 @@ const redo = async () => {
   }, 100)
 }
 
+function formatData(data: unknown): string {
+  if (typeof data === 'string') return data
+  return JSON.stringify(data, null, 2)
+}
+
 onMounted(() => {
   connectWebSocket()
 })
 
 onUnmounted(() => {
   closeWebSocket()
+})
+
+const filteredInputMessages = ref<unknown[]>([])
+watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
+  if (!(newIsRunning || !newLastRunCompleted)) {
+    filteredInputMessages.value = []
+    for (let index = 0; index < outputMessages.value.length; index++) {
+      const data = outputMessages.value[index]
+
+      if (data && typeof data === 'object' && 'Timestamp' in data) {
+        const temp = inputMessages.value.find((item) => {
+          if (item && typeof item === 'object' && 'Timestamp' in item) {
+            return item.Timestamp === data.Timestamp
+          }
+        })
+        filteredInputMessages.value.push(temp)
+      }
+    }
+  }
 })
 </script>
 
@@ -606,6 +658,14 @@ onUnmounted(() => {
         >
           {{ $t('btns.addIntermediateNode') }}
         </button>
+        <button
+          class="uk-button uk-button-primary uk-button-small"
+          type="button"
+          uk-toggle="target: #io-modal"
+          :disabled="isRunning || !lastRunCompleted"
+        >
+          {{ $t('btns.viewPipelineResults') }}
+        </button>
       </div></Panel
     >
     <Panel position="top-center" style="margin-top: 75px">
@@ -626,8 +686,7 @@ onUnmounted(() => {
           {{ $t('btns.import') }}
         </button>
         <button
-          class="uk-button uk-button-small"
-          id="delete-button"
+          class="uk-button uk-button-small uk-delete-button"
           @click="delConfirm"
           :disabled="getSelectedNodes.length === 0"
         >
@@ -672,6 +731,28 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
+  <!-- Input/Output Modal -->
+  <div id="io-modal" uk-modal @beforehide="showIoPanel = false">
+    <div class="uk-modal-dialog uk-modal-body json-container-wrapper">
+      <h2 class="uk-modal-title">
+        {{ $t('text.streamInspector') }}
+      </h2>
+      <div class="uk-margin-small-bottom data-header">
+        <div>
+          <h3>{{ $t('text.input') }} - {{ inputTopicName }}</h3>
+        </div>
+        <div>
+          <h3>{{ $t('text.output') }} - {{ outputTopicName }}</h3>
+        </div>
+      </div>
+      <div class="data">
+        <div class="row" v-for="(data, i) in outputMessages" :key="i">
+          <pre class="json-container" v-text="formatData(filteredInputMessages[i])"></pre>
+          <pre class="json-container" v-text="formatData(data)"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Pipeline Status -->
   <div
     v-if="currentPipeline && currentPipeline.status"
@@ -797,19 +878,5 @@ onUnmounted(() => {
 /* Hover effect for light mode */
 .basic-flow:not(.dark) #additional-control-buttons:hover {
   background-color: #f4f4f4 !important;
-}
-
-#delete-button {
-  height: 30px;
-  background-color: var(--mkpError);
-  color: white !important;
-}
-
-#delete-button:disabled {
-  background-color: #979494;
-  color: #999;
-  cursor: not-allowed;
-  border-color: #dae0e5;
-  box-shadow: none;
 }
 </style>

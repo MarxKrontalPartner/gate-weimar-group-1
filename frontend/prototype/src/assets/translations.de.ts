@@ -11,12 +11,12 @@ export const TranslationsDE = {
     addTransformationNode: 'Transformationsknoten hinzufügen',
     addIntermediateNode: 'Zwischenknoten hinzufügen',
     runPipeline: 'Pipeline ausführen',
+    viewPipelineResults: 'Pipeline-Ergebnisse anzeigen',
     runTransformation: 'Transformation ausführen',
     running: 'Läuft...',
     testRuntime: 'Test',
     abort: 'Abbruch!',
   },
-
   status: {
     loadingRuntime: 'Python-Laufzeit wird geladen...',
     runtimeReady: 'Laufzeit bereit',
@@ -28,8 +28,10 @@ export const TranslationsDE = {
     output: 'Ausgabe',
     line: 'Zeile',
   },
-
   text: {
+    input: 'Eingabe',
+    output: 'Ausgabe',
+    streamInspector: 'Stream-Inspektor',
     transformNodeAlert: {
       missingInputData: 'Eingabedaten fehlen. Beispiel: ',
       jsonInputRequired: 'Eingabe muss ein JSON-Objekt sein.',

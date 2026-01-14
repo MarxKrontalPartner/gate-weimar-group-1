@@ -11,6 +11,7 @@ export const TranslationsEN = {
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
     runPipeline: 'Run Pipeline',
+    viewPipelineResults: 'View Pipeline Results',
     runTransformation: 'Run Transformation',
     running: 'Running...',
     testRuntime: 'Test',
@@ -28,6 +29,9 @@ export const TranslationsEN = {
     line: 'Line',
   },
   text: {
+    input: 'Input',
+    output: 'Output',
+    streamInspector: 'Stream Inspector',
     transformNodeAlert: {
       missingInputData: 'Input data is missing. For Example: ',
       jsonInputRequired: 'Input must be a JSON object.',

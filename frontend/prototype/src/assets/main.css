@@ -69,6 +69,7 @@ body.dark-mode .uk-modal-dialog {
 
 .uk-button {
   border-radius: 3px !important;
+  color: #fff !important;
 }
 
 .uk-cancel-button {
@@ -227,7 +228,7 @@ body,
 }
 
 .panel {
-  width: 800px;
+  width: 1000px;
 }
 
 .basic-flow .vue-flow__node.selected {
@@ -302,4 +303,50 @@ body,
   max-width: 420px;
   overflow-wrap: break-word;
   text-align: left;
+}
+
+.uk-button:disabled {
+  background-color: #979494 !important;
+  border: none;
+}
+
+.json-container-wrapper {
+  width: 900px;
+}
+
+.json-container-wrapper .row,
+.json-container-wrapper .data-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.json-container-wrapper .row:not(:first-child) {
+  margin-bottom: 3%;
+}
+
+.json-container {
+  padding: 1%;
+  border-radius: 6px;
+  overflow: auto;
+  margin: 0;
+  width: 48%;
+}
+
+.json-container:not(:last-child) {
+  margin-right: 2%;
+}
+
+.json-container-wrapper .data-header div {
+  width: 49%;
+  display: flex;
+  justify-content: center;
+}
+
+body.dark-mode h3 {
+  color: white !important;
+}
+
+.json-container-wrapper .data {
+  display: flex;
+  flex-direction: column-reverse;
 }
