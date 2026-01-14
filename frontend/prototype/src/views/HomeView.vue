@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onUnmounted, onMounted, reactive, nextTick, inject, type Ref } from 'vue'
+import {
+  ref,
+  watch,
+  onUnmounted,
+  onMounted,
+  reactive,
+  nextTick,
+  inject,
+  type Ref,
+  computed,
+} from 'vue'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type FlowExportObject } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -611,6 +621,10 @@ onMounted(() => {
 onUnmounted(() => {
   closeWebSocket()
 })
+
+const messagesMaxLength = computed(() =>
+  Math.max(inputMessages.value.length, outputMessages.value.length),
+)
 </script>
 
 <template>
@@ -641,7 +655,6 @@ onUnmounted(() => {
         </button>
         <button
           class="uk-button uk-button-primary uk-button-small"
-          id="view-results-button"
           type="button"
           uk-toggle="target: #io-modal"
           :disabled="isRunning || !lastRunCompleted"
@@ -668,8 +681,7 @@ onUnmounted(() => {
           {{ $t('btns.import') }}
         </button>
         <button
-          class="uk-button uk-button-small"
-          id="delete-button"
+          class="uk-button uk-button-small uk-delete-button"
           @click="delConfirm"
           :disabled="getSelectedNodes.length === 0"
         >
@@ -714,40 +726,32 @@ onUnmounted(() => {
       ></span>
     </Controls>
   </VueFlow>
-  <!-- Input/Output Panel -->
+  <!-- Input/Output Modal -->
   <div id="io-modal" uk-modal @beforehide="showIoPanel = false">
-    <div class="uk-modal-dialog uk-modal-body io-modal-dialog">
-      <div class="uk-flex uk-flex-between uk-flex-middle">
-        <h2 class="uk-modal-title">
-          {{ $t('text.streamInspector') }}
-        </h2>
-
-        <button class="uk-modal-close-default" type="button" uk-close></button>
+    <div class="uk-modal-dialog uk-modal-body json-container-wrapper">
+      <h2 class="uk-modal-title">
+        {{ $t('text.streamInspector') }}
+      </h2>
+      <div class="uk-margin-small-bottom data-header">
+        <div>
+          <h3>{{ $t('text.input') }} - {{ inputTopicName }}</h3>
+        </div>
+        <div>
+          <h3>{{ $t('text.output') }} - {{ outputTopicName }}</h3>
+        </div>
       </div>
-
-      <div class="io-columns-header uk-margin-small-bottom">
-        <div class="col input">{{ $t('text.input') }} - {{ inputTopicName }}</div>
-        <div class="col output">{{ $t('text.output') }} - {{ outputTopicName }}</div>
-      </div>
-
-      <div class="io-scroll">
-        <div
-          v-for="i in Math.max(inputMessages.length, outputMessages.length)"
-          :key="i"
-          class="io-columns-body"
-        >
-          <div class="col input">
-            <pre v-if="inputMessages[i - 1]" v-text="formatData(inputMessages[i - 1] as unknown)" />
-            <span v-else class="placeholder">—</span>
-          </div>
-
-          <div class="col output">
-            <pre
-              v-if="outputMessages[i - 1]"
-              v-text="formatData(outputMessages[i - 1] as unknown)"
-            />
-            <span v-else class="placeholder">—</span>
-          </div>
+      <div class="data">
+        <div class="row" v-for="i in messagesMaxLength" :key="i">
+          <pre
+            class="json-container"
+            v-if="inputMessages[messagesMaxLength - i]"
+            v-text="formatData(inputMessages[messagesMaxLength - i] as unknown)"
+          ></pre>
+          <pre
+            class="json-container"
+            v-if="outputMessages[messagesMaxLength - i]"
+            v-text="formatData(outputMessages[messagesMaxLength - i] as unknown)"
+          ></pre>
         </div>
       </div>
     </div>
@@ -877,25 +881,5 @@ onUnmounted(() => {
 /* Hover effect for light mode */
 .basic-flow:not(.dark) #additional-control-buttons:hover {
   background-color: #f4f4f4 !important;
-}
-
-#delete-button {
-  height: 30px;
-  background-color: var(--mkpError);
-  color: white !important;
-}
-
-#view-results-button {
-  height: 30px;
-  color: white !important;
-}
-
-#view-results-button:disabled,
-#delete-button:disabled {
-  background-color: #979494;
-  color: #999;
-  cursor: not-allowed;
-  border-color: #dae0e5;
-  box-shadow: none;
 }
 </style>
