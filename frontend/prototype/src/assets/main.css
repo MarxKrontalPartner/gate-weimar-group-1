@@ -320,7 +320,7 @@ body,
   justify-content: space-between;
 }
 
-.json-container-wrapper .row:not(:last-child) {
+.json-container-wrapper .row:not(:first-child) {
   margin-bottom: 3%;
 }
 
@@ -338,8 +338,15 @@ body,
 
 .json-container-wrapper .data-header div {
   width: 49%;
+  display: flex;
+  justify-content: center;
 }
 
 body.dark-mode h3 {
   color: white !important;
+}
+
+.json-container-wrapper .data {
+  display: flex;
+  flex-direction: column-reverse;
 }

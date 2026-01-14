@@ -1,15 +1,5 @@
 <script setup lang="ts">
-import {
-  ref,
-  watch,
-  onUnmounted,
-  onMounted,
-  reactive,
-  nextTick,
-  inject,
-  type Ref,
-  computed,
-} from 'vue'
+import { ref, watch, onUnmounted, onMounted, reactive, nextTick, inject, type Ref } from 'vue'
 import { ConnectionMode, VueFlow, useVueFlow, Panel, type FlowExportObject } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -288,7 +278,7 @@ const handleStreamEvent = (data: unknown, pipeline_id: string, topic?: string) =
   }
 
   if (topic === inputTopicName.value) {
-    pushLatest(inputMessages.value, data)
+    inputMessages.value.push(data)
   } else if (topic === outputTopicName.value) {
     pushLatest(outputMessages.value, data)
   }
@@ -622,9 +612,24 @@ onUnmounted(() => {
   closeWebSocket()
 })
 
-const messagesMaxLength = computed(() =>
-  Math.max(inputMessages.value.length, outputMessages.value.length),
-)
+const filteredInputMessages = ref<unknown[]>([])
+watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
+  if (!(newIsRunning || !newLastRunCompleted)) {
+    filteredInputMessages.value = []
+    for (let index = 0; index < outputMessages.value.length; index++) {
+      const data = outputMessages.value[index]
+
+      if (data && typeof data === 'object' && 'Timestamp' in data) {
+        const temp = inputMessages.value.find((item) => {
+          if (item && typeof item === 'object' && 'Timestamp' in item) {
+            return item.Timestamp === data.Timestamp
+          }
+        })
+        filteredInputMessages.value.push(temp)
+      }
+    }
+  }
+})
 </script>
 
 <template>
@@ -741,17 +746,9 @@ const messagesMaxLength = computed(() =>
         </div>
       </div>
       <div class="data">
-        <div class="row" v-for="i in messagesMaxLength" :key="i">
-          <pre
-            class="json-container"
-            v-if="inputMessages[messagesMaxLength - i]"
-            v-text="formatData(inputMessages[messagesMaxLength - i] as unknown)"
-          ></pre>
-          <pre
-            class="json-container"
-            v-if="outputMessages[messagesMaxLength - i]"
-            v-text="formatData(outputMessages[messagesMaxLength - i] as unknown)"
-          ></pre>
+        <div class="row" v-for="(data, i) in outputMessages" :key="i">
+          <pre class="json-container" v-text="formatData(filteredInputMessages[i])"></pre>
+          <pre class="json-container" v-text="formatData(data)"></pre>
         </div>
       </div>
     </div>
