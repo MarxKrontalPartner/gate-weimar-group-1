@@ -132,7 +132,7 @@ function addIntermediateNode() {
     id,
     position: { x: 400, y: 500 },
     type: 'custom-intermediate',
-    data: { content: 'Intermediate Topic' },
+    data: { content: 'IntermediateTopic' },
   })
 }
 
