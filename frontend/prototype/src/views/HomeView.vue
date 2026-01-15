@@ -114,11 +114,9 @@ function addNode() {
     data: {
       content: `Transform ${transformationNodeNumber}`,
       code: `def transform${transformationNodeNumber}(row: dict) -> dict:
-    logger.info(f"before :: row :: {row}")
     for key in row:
         if key.startswith("channel_"):
             row[key] += 10
-    logger.info(f"after :: row :: {row}")
     return row
   `,
     },
