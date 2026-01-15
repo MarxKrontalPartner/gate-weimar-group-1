@@ -276,7 +276,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
     statusTimer = null
   }
 
-  // Hide ONLY when completed or failed (after 5s)
+  // Hide ONLY when completed or aborted (after 5s)
   if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'aborted') {
     statusTimer = window.setTimeout(() => {
       currentPipeline.value = null
@@ -799,7 +799,7 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"
   >
-    <div class="status-content">
+    <div class="status-content" :class="{ 'has-close': currentPipeline.status === 'failed' }">
       <span
         class="status-dot"
         :class="{
@@ -834,12 +834,12 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
       </button>
       <button
         v-if="currentPipeline.status === 'failed'"
-        class="uk-button uk-button-small uk-button-default uk-margin-left"
+        class="uk-modal-close-default"
+        type="button"
         @click="currentPipeline = null"
+        uk-close
         title="Close"
-      >
-        ✕
-      </button>
+      ></button>
     </div>
     <div v-if="currentPipeline.status === 'failed'" class="uk-margin-small-top">
       <div class="status-text uk-text-danger">

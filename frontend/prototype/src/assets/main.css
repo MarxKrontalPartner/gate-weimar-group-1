@@ -257,8 +257,12 @@ body,
 .status-content {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 20px;
+}
+
+.status-content.has-close {
+  padding-right: 40px;
 }
 
 .status-dot {
@@ -266,7 +270,6 @@ body,
   height: 12px;
   border-radius: 50%;
   display: flex;
-  align-items: center;
   justify-content: center;
   font-size: 9px;
   color: var(--white);
