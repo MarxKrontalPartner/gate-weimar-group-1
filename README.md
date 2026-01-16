@@ -6,7 +6,7 @@ This project is a modern data pipeline orchestrator with a **Vue 3 frontend** an
 
 ## Table of Contents
 
-- [Screenshots](#screenshots)
+- [Screenshots and Video](#screenshots-and-video)
 - [Requirements](#requirements)
 - [Clone the Repository](#clone-the-repository)
 - [Running the Application](#running-the-application)
@@ -19,11 +19,19 @@ This project is a modern data pipeline orchestrator with a **Vue 3 frontend** an
 
 ---
 
-### Screenshots
+### Screenshots and Video
 
-<div style="display: flex; justify-content: space-between;">
-    <img src="./frontend/prototype/docs/Sc1.png" alt="light" width="48%">
-    <img src="./frontend/prototype/docs/Sc2.png" alt="dark" width="48%">
+<div style="display: flex; justify-content: space-between">
+  <a
+    href="https://drive.google.com/file/d/1B1V765mE6o4MKi7hdiK9MdSAEW8_pfzd/view?usp=sharing"
+    width="48%"
+    ><img src="./frontend/prototype/docs/Sc1.png" alt="light" width="100%"
+  /></a>
+  <a
+    href="https://drive.google.com/file/d/1B1V765mE6o4MKi7hdiK9MdSAEW8_pfzd/view?usp=sharing"
+    width="48%"
+    ><img src="./frontend/prototype/docs/Sc2.png" alt="dark" width="100%"
+  /></a>
 </div>
 
 ---
