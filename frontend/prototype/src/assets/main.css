@@ -333,6 +333,8 @@ body,
 
 .json-container-wrapper {
   width: 900px;
+  max-height: 600px;
+  overflow-y: scroll;
 }
 
 .json-container-wrapper .row,

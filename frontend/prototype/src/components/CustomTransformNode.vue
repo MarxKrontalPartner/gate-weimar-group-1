@@ -41,7 +41,7 @@ const showAbortButton = computed(() => runtimeStatus.value === 'executing')
 const onModalToggle = () => {
   if (!showModal.value) {
     lastSavedCode = reactiveData.code
-    inputData.value = ''
+    // inputData.value = ''
     output.value = null
   }
   showModal.value = !showModal.value
