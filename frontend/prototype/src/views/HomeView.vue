@@ -8,7 +8,6 @@ import { initialEdges, initialNodes } from '@/assets/initial-flow.ts'
 import CustomTransformNode from '@/components/CustomTransformNode.vue'
 import CustomInputNode from '@/components/CustomInputNode.vue'
 import CustomOutputNode from '@/components/CustomOutputNode.vue'
-import UIkit from 'uikit'
 import CustomIntermediateNode from '@/components/CustomIntermediateNode.vue'
 import { type Payload } from '@/assets/payload.ts'
 import { useI18n } from 'vue-i18n'
@@ -101,8 +100,10 @@ watch(
   { immediate: true },
 )
 
+const showDeleteConfirmModal = ref(false)
+
 function delConfirm() {
-  UIkit.modal('#del-confirm').show()
+  showDeleteConfirmModal.value = true
 }
 
 let transformationNodeNumber = 2
@@ -330,9 +331,11 @@ const abortPipeline = async () => {
   }
 }
 
+const showRunPipelineModal = ref(false)
+
 const createRequest = async () => {
   if (!validateRunForm()) return
-  UIkit.modal('#run-pipeline-modal')?.hide()
+  showRunPipelineModal.value = false
 
   const obj = toObject()
   let transformations: string[] = []
@@ -669,6 +672,14 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     }
   }
 })
+
+const ioModalToggle = () => {
+  showIoPanel.value = !showIoPanel.value
+}
+
+const runPipelineModalToggle = () => {
+  showRunPipelineModal.value = !showRunPipelineModal.value
+}
 </script>
 
 <template>
@@ -698,6 +709,7 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
           {{ $t('btns.addIntermediateNode') }}
         </button>
         <button
+          @click="ioModalToggle"
           class="uk-button uk-button-primary uk-button-small"
           type="button"
           uk-toggle="target: #io-modal"
@@ -710,6 +722,7 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     <Panel position="top-center" style="margin-top: 75px">
       <div class="panel button-container">
         <button
+          @click="runPipelineModalToggle"
           class="uk-button uk-button-primary uk-button-small"
           type="button"
           uk-toggle="target: #run-pipeline-modal"
@@ -727,6 +740,7 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
         <button
           class="uk-button uk-button-small uk-delete-button"
           @click="delConfirm"
+          uk-toggle="target: #del-confirm"
           :disabled="getSelectedNodes.length === 0"
         >
           {{ $t('btns.deleteConfirm') }}
@@ -771,7 +785,7 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     </Controls>
   </VueFlow>
   <!-- Input/Output Modal -->
-  <div id="io-modal" uk-modal @beforehide="showIoPanel = false">
+  <div id="io-modal" uk-modal @beforehide="showIoPanel = false" v-if="showIoPanel">
     <div class="uk-modal-dialog uk-modal-body json-container-wrapper">
       <h2 class="uk-modal-title">
         {{ $t('text.streamInspector') }}
@@ -859,7 +873,12 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     </div>
   </div>
   <!-- Deletion Confirmation -->
-  <div id="del-confirm" uk-modal>
+  <div
+    id="del-confirm"
+    uk-modal
+    @beforehide="showDeleteConfirmModal = false"
+    v-if="showDeleteConfirmModal"
+  >
     <div class="uk-modal-dialog button-container uk-modal-body">
       <h2 class="uk-modal-title">{{ $t('text.nodeDeleteConfirm.title') }}</h2>
       <p>{{ $t('text.nodeDeleteConfirm.warning') }}</p>
@@ -878,7 +897,12 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     </div>
   </div>
   <!-- Run Pipeline Modal -->
-  <div id="run-pipeline-modal" uk-modal="esc-close: false; bg-close: false">
+  <div
+    id="run-pipeline-modal"
+    uk-modal="esc-close: false; bg-close: false"
+    @beforehide="showRunPipelineModal = false"
+    v-if="showRunPipelineModal"
+  >
     <div class="uk-modal-dialog button-container uk-modal-body">
       <h2 class="uk-modal-title">
         {{ $t('text.runPipeline.title') }}
