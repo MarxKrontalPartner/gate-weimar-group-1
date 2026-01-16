@@ -18,6 +18,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  optimizeDeps: {
+    include: ['pyodide'],
+    exclude: [],
+  },
   server: {
     port: 5173, // Frontend port
     proxy: {

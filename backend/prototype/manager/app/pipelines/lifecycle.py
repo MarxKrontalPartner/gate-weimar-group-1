@@ -3,6 +3,7 @@ import docker
 import time
 import json
 import os
+import traceback
 
 from app.pipelines.models import PipelineInput, PipelineStatus
 from app.pipelines.registry import get_pipeline
@@ -38,9 +39,9 @@ def stop_and_remove_container(container, name: str | None = None):
 
 def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
     state = get_pipeline(pipeline.pipeline_id)
-    if state and state["status"] == PipelineStatus.FAILED:
+    if state and state["status"] in (PipelineStatus.FAILED, PipelineStatus.ABORTED):
         logger.warning(
-            f"Pipeline {pipeline.pipeline_id} already FAILED — skipping lifecycle"
+            f"Pipeline {pipeline.pipeline_id} already FAILED or ABORTED — skipping lifecycle"
         )
         return
     
@@ -86,6 +87,8 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
             logger.info("Launching PRODUCER container…")
 
             producer_env_vars = {
+                "PIPELINE_ID": pipeline.pipeline_id,
+                "SEGMENT_INDEX": str(segment_index),
                 "BROKER_ADDRESS": broker_address,
                 "INPUT_TOPIC": pipeline.input_topic,
                 "N_CHANNELS": str(pipeline.n_channels),
@@ -99,6 +102,11 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
                 network=network_name,
                 environment=producer_env_vars,
                 name=f"producer_{pipeline.pipeline_id}_{segment_index}",
+                labels={
+                    "pipeline_id": pipeline.pipeline_id,
+                    "role": "producer",
+                    "segment_index": str(segment_index),
+                },
                 auto_remove=False
             )
             logger.info(f"Producer container {producer_container.short_id} started")
@@ -111,6 +119,11 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
             network=network_name,  
             environment=worker_env_vars,
             name=f"worker_{pipeline.pipeline_id}_{segment_index}",
+            labels={
+                "pipeline_id": pipeline.pipeline_id,
+                "role": "worker",
+                "segment_index": str(segment_index),
+            },
             auto_remove=False 
         )
 
@@ -124,6 +137,11 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
         elapsed = 0
 
         while elapsed < container_runtime:
+            state = get_pipeline(pipeline.pipeline_id)
+
+            if state and state["status"] == PipelineStatus.ABORTED:
+                logger.info(f"[{pipeline.pipeline_id}] Already Aborted and broadcasted to frontend")
+                return
 
             # Check worker only if it exists
             if worker_container:
@@ -132,13 +150,6 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
 
                 if worker_status == "exited":
                     logger.error("Worker exited unexpectedly — failing pipeline")
-                    emit_event(
-                        pipeline_id=pipeline.pipeline_id,
-                        segment_index=segment_index,
-                        category="lifecycle",
-                        type="failed",
-                        data="Worker container exited unexpectedly",
-                    )
 
                     if producer_container:
                         stop_and_remove_container(producer_container, name="producer")
@@ -152,13 +163,6 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
 
                 if producer_status == "exited":
                     logger.error("Producer exited unexpectedly — failing pipeline")
-                    emit_event(
-                        pipeline_id=pipeline.pipeline_id,
-                        segment_index=segment_index,
-                        category="lifecycle",
-                        type="failed",
-                        data="Producer container exited unexpectedly",
-                    )
 
                     if worker_container:
                         stop_and_remove_container(worker_container, name="worker")
@@ -192,7 +196,10 @@ def manage_pipeline_lifecycle(pipeline: PipelineInput, segment_index: int = 0):
             pipeline_id=pipeline.pipeline_id,
             category="lifecycle",
             type="failed",
-            data=str(e),
+            data={
+                "message": f"Lifecycle Manager crashed:\n\n{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc(),
+            },
         )
         
         if worker_container:

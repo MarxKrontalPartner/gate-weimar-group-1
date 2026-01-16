@@ -11,6 +11,9 @@ export const TranslationsEN = {
     addTransformationNode: 'Add Transformation Node',
     addIntermediateNode: 'Add Intermediate Node',
     runPipeline: 'Run Pipeline',
+    showTraceback: 'Show Traceback',
+    hideTraceback: 'Hide Traceback',
+    aborting: 'Aborting...',
     viewPipelineResults: 'View Pipeline Results',
     runTransformation: 'Run Transformation',
     running: 'Running...',
@@ -50,12 +53,14 @@ export const TranslationsEN = {
     backendContactError: 'Failed to contact backend.',
     webSocketError:
       'Cannot connect to backend or WebSocket. Please restart the backend and try again.',
+    abortError: 'Failed to abort pipeline.',
     pipeline: {
       label: 'Pipeline',
       status: {
         running: 'running',
         completed: 'completed',
         failed: 'failed',
+        aborted: 'aborted',
       },
     },
     runPipeline: {

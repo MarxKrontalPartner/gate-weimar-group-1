@@ -45,12 +45,14 @@ const outputTopicName = ref<string>('')
 const showIoPanel = ref(false)
 const lastRunCompleted = ref(false)
 
-type PipelineStatus = 'running' | 'completed' | 'failed'
+type PipelineStatus = 'running' | 'completed' | 'failed' | 'aborted'
 
 interface PipelineState {
   id: string
   status: PipelineStatus
   message: string
+  traceback?: string
+  showTraceback?: boolean
 }
 
 const currentPipeline = ref<PipelineState | null>(null)
@@ -58,6 +60,8 @@ const currentPipeline = ref<PipelineState | null>(null)
 let statusTimer: number | null = null
 
 const isRunning = ref(false)
+
+const isAborting = ref(false)
 
 const runForm = reactive({
   allowProducer: false,
@@ -235,6 +239,7 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'completed'
       currentPipeline.value.message = 'Pipeline completed'
       isRunning.value = false
+      isAborting.value = false
       lastRunCompleted.value = true
       break
 
@@ -242,10 +247,24 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
       currentPipeline.value.status = 'failed'
       if (typeof data === 'string') {
         currentPipeline.value.message = data
+        currentPipeline.value.traceback = undefined
+      } else if (data && typeof data === 'object') {
+        const error = data as { message?: string; traceback?: string }
+        currentPipeline.value.message = error.message ?? 'Pipeline failed'
+        currentPipeline.value.traceback = error.traceback
+        currentPipeline.value.showTraceback = false
       } else {
         currentPipeline.value.message = 'Pipeline failed'
       }
       isRunning.value = false
+      isAborting.value = false
+      break
+
+    case 'aborted':
+      currentPipeline.value.status = 'aborted'
+      currentPipeline.value.message = 'Pipeline aborted'
+      isRunning.value = false
+      isAborting.value = false
       break
   }
 
@@ -255,8 +274,8 @@ const handleLifecycleEvent = (type: string, data: unknown, pipeline_id: string) 
     statusTimer = null
   }
 
-  // Hide ONLY when completed or failed (after 5s)
-  if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'failed') {
+  // Hide ONLY when completed or aborted (after 5s)
+  if (currentPipeline.value.status === 'completed' || currentPipeline.value.status === 'aborted') {
     statusTimer = window.setTimeout(() => {
       currentPipeline.value = null
     }, 5000)
@@ -286,6 +305,28 @@ const closeWebSocket = () => {
   if (ws) {
     ws.close()
     ws = null
+  }
+}
+
+const abortPipeline = async () => {
+  if (!currentPipeline.value) return
+
+  isAborting.value = true
+
+  try {
+    const res = await fetch(`/api/abort/${currentPipeline.value.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    if (!res.ok) {
+      isAborting.value = false
+      alert(t('text.abortError'))
+    }
+  } catch (e) {
+    console.error(e)
+    isAborting.value = false
+    alert(t('text.abortError'))
   }
 }
 
@@ -756,13 +797,14 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
     v-if="currentPipeline && currentPipeline.status"
     class="pipeline-status uk-card uk-card-default uk-card-small"
   >
-    <div class="status-content">
+    <div class="status-content" :class="{ 'has-close': currentPipeline.status === 'failed' }">
       <span
         class="status-dot"
         :class="{
           running: currentPipeline.status === 'running',
           completed: currentPipeline.status === 'completed',
           failed: currentPipeline.status === 'failed',
+          aborted: currentPipeline.status === 'aborted',
         }"
       ></span>
 
@@ -775,6 +817,45 @@ watch([isRunning, lastRunCompleted], ([newIsRunning, newLastRunCompleted]) => {
           $t(`text.pipeline.status.${currentPipeline.status}`)
         }}
       </span>
+      <button
+        v-if="currentPipeline.status === 'running'"
+        class="uk-button uk-delete-button uk-button-small"
+        :disabled="isAborting"
+        @click="abortPipeline"
+      >
+        <template v-if="!isAborting">
+          {{ $t('btns.abort') }}
+        </template>
+        <template v-else>
+          {{ $t('btns.aborting') }}
+        </template>
+      </button>
+      <button
+        v-if="currentPipeline.status === 'failed'"
+        class="uk-modal-close-default"
+        type="button"
+        @click="currentPipeline = null"
+        uk-close
+        title="Close"
+      ></button>
+    </div>
+    <div v-if="currentPipeline.status === 'failed'" class="uk-margin-small-top">
+      <div class="status-text uk-text-danger">
+        {{ currentPipeline.message }}
+      </div>
+      <div v-if="currentPipeline.traceback" class="uk-margin-small-top">
+        <button
+          class="uk-button uk-button-small uk-button-primary"
+          @click="currentPipeline.showTraceback = !currentPipeline.showTraceback"
+        >
+          {{ currentPipeline.showTraceback ? $t('btns.hideTraceback') : $t('btns.showTraceback') }}
+        </button>
+        <pre
+          v-if="currentPipeline.showTraceback"
+          class="uk-margin-small-top"
+          v-text="currentPipeline.traceback"
+        ></pre>
+      </div>
     </div>
   </div>
   <!-- Deletion Confirmation -->

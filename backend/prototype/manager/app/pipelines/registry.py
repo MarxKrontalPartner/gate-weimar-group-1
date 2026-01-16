@@ -50,7 +50,7 @@ def segment_completed(pipeline_id: str) -> bool:
         return False
 
     with pipeline.lock:
-        if pipeline.status in (PipelineStatus.COMPLETED, PipelineStatus.FAILED):
+        if pipeline.status in (PipelineStatus.COMPLETED, PipelineStatus.FAILED, PipelineStatus.ABORTED):
             return False
 
         pipeline.status = PipelineStatus.RUNNING
@@ -72,12 +72,29 @@ def fail_pipeline(pipeline_id: str, message: str):
         return
 
     with pipeline.lock:
-        if pipeline.status in (PipelineStatus.COMPLETED, PipelineStatus.FAILED):
+        if pipeline.status in (PipelineStatus.COMPLETED, PipelineStatus.FAILED, PipelineStatus.ABORTED):
             return
 
         pipeline.status = PipelineStatus.FAILED
         pipeline.message = message
 
+def abort_pipeline(pipeline_id: str, message: str = "User aborted pipeline"):
+    pipeline = PIPELINES.get(pipeline_id)
+    if not pipeline:
+        return False
+
+    with pipeline.lock:
+        if pipeline.status in (
+            PipelineStatus.COMPLETED,
+            PipelineStatus.FAILED,
+            PipelineStatus.ABORTED,
+        ):
+            return False
+
+        pipeline.status = PipelineStatus.ABORTED
+        pipeline.message = message
+
+    return True
 
 def get_pipeline(pipeline_id: str):
     pipeline = PIPELINES.get(pipeline_id)

@@ -11,6 +11,9 @@ export const TranslationsDE = {
     addTransformationNode: 'Transformationsknoten hinzufügen',
     addIntermediateNode: 'Zwischenknoten hinzufügen',
     runPipeline: 'Pipeline ausführen',
+    showTraceback: 'Traceback anzeigen',
+    hideTraceback: 'Traceback verbergen',
+    aborting: 'Abbruch läuft...',
     viewPipelineResults: 'Pipeline-Ergebnisse anzeigen',
     runTransformation: 'Transformation ausführen',
     running: 'Läuft...',
@@ -52,12 +55,14 @@ export const TranslationsDE = {
     backendContactError: 'Backend konnte nicht erreicht werden.',
     webSocketError:
       'Kann keine Verbindung zum Backend oder WebSocket herstellen. Bitte Backend neu starten und erneut versuchen.',
+    abortError: 'Pipeline-Abbruch fehlgeschlagen.',
     pipeline: {
       label: 'Pipeline',
       status: {
         running: 'läuft',
         completed: 'abgeschlossen',
         failed: 'fehlgeschlagen',
+        aborted: 'abgebrochen',
       },
     },
     runPipeline: {

@@ -245,10 +245,24 @@ body,
   z-index: 1500;
 }
 
+.pipeline-status pre {
+  max-height: 300px;
+  max-width: 460px;
+  white-space: pre-wrap;
+  text-align: left;
+  font-size: 12px;
+  background-color: #f8f8f8;
+}
+
 .status-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.status-content.has-close {
+  padding-right: 40px;
 }
 
 .status-dot {
@@ -256,7 +270,6 @@ body,
   height: 12px;
   border-radius: 50%;
   display: flex;
-  align-items: center;
   justify-content: center;
   font-size: 9px;
   color: var(--white);
@@ -284,6 +297,14 @@ body,
   content: '✕';
 }
 
+.status-dot.aborted {
+  background-color: var(--mkpInfo);
+}
+
+.status-dot.aborted::after {
+  content: '!';
+}
+
 /* Blink animation */
 @keyframes blink {
   0% {
@@ -300,7 +321,7 @@ body,
 .status-text {
   font-size: 13px;
   font-weight: 500;
-  max-width: 420px;
+  max-width: 400px;
   overflow-wrap: break-word;
   text-align: left;
 }

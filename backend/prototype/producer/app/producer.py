@@ -1,5 +1,6 @@
 # producer.py
 import random
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -7,7 +8,9 @@ from quixstreams import Application
 from quixstreams.models.messages import KafkaMessage
 
 from shared.logger import get_logger
+from shared.events import emit_event
 import os
+import traceback
 
 
 class Producer:
@@ -112,6 +115,8 @@ class Producer:
 
 if __name__ == "__main__":
 
+    PIPELINE_ID = os.environ["PIPELINE_ID"]
+    SEGMENT_INDEX = int(os.environ.get("SEGMENT_INDEX", "0"))
     broker_address = os.environ.get("BROKER_ADDRESS", "redpanda:9092")
     input_topic_name = os.environ["INPUT_TOPIC"]
     n_channels = int(os.environ.get("N_CHANNELS", "10"))
@@ -122,5 +127,17 @@ if __name__ == "__main__":
         n_channels=n_channels,
         frequency=frequency,
     )
-    producer.produce()
-    print("Producer has stopped.")
+    try:
+        producer.produce()
+    except Exception as e:
+        emit_event(
+            pipeline_id=PIPELINE_ID,
+            segment_index=SEGMENT_INDEX,
+            category="lifecycle",
+            type="failed",
+            data={
+                "message": f"Producer crashed:\n\n{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc(),
+            },
+        )
+        sys.exit(1)
